@@ -1,0 +1,2337 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kassabok</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kassabok">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#EDF2EE" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1512" media="(prefers-color-scheme: dark)">
+<style>
+:root {
+  --bg: #EDF2EE; --panel: #FFFFFF; --ink: #15201A; --muted: #56675D; --line: #C8D4CC;
+  --pine: #1D5A43; --pine-ink: #FFFFFF; --pine-soft: #DCEAE2; --amber: #A86A12; --amber-soft: #F6E8CF; --red: #B0382A; --red-soft: #F6DEDA;
+  --shadow: 0 1px 0 rgba(21,32,26,.06);
+  color-scheme: light; box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1512; --panel: #16201B; --ink: #E4EDE7; --muted: #94A69B; --line: #2B3B33;
+    --pine: #56AE86; --pine-ink: #0E1512; --pine-soft: #1D3229; --amber: #E2A54A; --amber-soft: #3A2D16; --red: #E7705D; --red-soft: #3D1F1A;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1512; --panel: #16201B; --ink: #E4EDE7; --muted: #94A69B; --line: #2B3B33;
+  --pine: #56AE86; --pine-ink: #0E1512; --pine-soft: #1D3229; --amber: #E2A54A; --amber-soft: #3A2D16; --red: #E7705D; --red-soft: #3D1F1A;
+  --shadow: none; color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.num { font-variant-numeric: tabular-nums; }
+.serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 12px 16px 10px; border-bottom: 1px solid var(--line); }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 760px; margin: 0 auto; }
+.brand { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 22px; margin: 0; font-weight: 400; }
+.period { font: inherit; font-size: 14px; color: var(--ink); background-color: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 7px 8px; max-width: 60vw; }
+
+main { max-width: 760px; margin: 0 auto; padding: 14px 16px calc(92px + env(safe-area-inset-bottom, 0px)); }
+section[hidden] { display: none; }
+h2 { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-weight: 400; font-size: 26px; margin: 6px 0 4px; }
+h3 { font-size: 16px; margin: 24px 0 4px; }
+p.hint, .hint { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+.lead { color: var(--muted); font-size: 15px; margin: 0 0 14px; }
+
+details.help { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; margin: 4px 0 16px; }
+details.help summary { cursor: pointer; padding: 11px 0; font-size: 14px; font-weight: 600; color: var(--pine); list-style: none; }
+details.help summary::-webkit-details-marker { display: none; }
+details.help summary::before { content: "?"; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--pine-soft); color: var(--pine); font-size: 12px; margin-right: 8px; }
+details.help ol, details.help ul { margin: 0 0 12px; padding-left: 20px; font-size: 14px; color: var(--ink); }
+details.help li { margin: 4px 0; }
+
+/* Översikt */
+.hero { padding: 6px 0 4px; }
+.hero .label { color: var(--muted); font-size: 14px; }
+.hero .big { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: clamp(42px, 13vw, 66px); line-height: 1.05; margin: 2px 0 10px; }
+.hero .big.neg { color: var(--red); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.stat .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.daily { margin-top: 8px; background: var(--pine-soft); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.daily b { font-variant-numeric: tabular-nums; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--panel); margin-bottom: 10px; }
+.seg button { font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--pine); color: var(--pine-ink); }
+.notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--amber-soft); border-radius: 12px; padding: 12px 14px; margin: 14px 0 0; font-size: 14px; }
+.notice .btn { flex: none; }
+
+.group { margin-top: 22px; }
+.group > .gh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.group > .gh h3 { margin: 0; }
+.group > .gh .gs { font-size: 14px; color: var(--muted); white-space: nowrap; }
+.group > .gd { font-size: 13px; color: var(--muted); margin: 2px 0 8px; }
+.envs { display: flex; flex-direction: column; gap: 8px; }
+details.env { background: var(--panel); border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; box-shadow: var(--shadow); position: relative; }
+details.env::before { content: ""; position: absolute; left: -1px; top: -1px; width: 22px; height: 7px; background: var(--pine-soft); border-radius: 4px 4px 0 0; }
+details.env > summary { list-style: none; cursor: pointer; padding: 10px 12px; }
+details.env > summary::-webkit-details-marker { display: none; }
+.env .row1 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.env .name { font-weight: 600; font-size: 15px; }
+.env .vals { font-size: 14px; color: var(--muted); white-space: nowrap; }
+.env .vals b { color: var(--ink); }
+.bar { height: 8px; background: var(--pine-soft); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+.bar i { display: block; height: 100%; background: var(--pine); border-radius: 999px; }
+.env.warn .bar i { background: var(--amber); }
+.env.over .bar i { background: var(--red); }
+.env .rest { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.env.over .rest { color: var(--red); }
+.env.nobudget::before { background: var(--line); }
+.env .more { padding: 0 12px 12px; font-size: 14px; color: var(--muted); }
+.env .more .btn { margin-top: 8px; }
+
+/* Listor */
+.list { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 12px; border-top: 1px solid var(--line); cursor: pointer; width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; font: inherit; color: inherit; }
+.item:first-child { border-top: 0; }
+.item .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .a { text-align: right; font-variant-numeric: tabular-nums; }
+.item .a.pos { color: var(--pine); }
+.item .m { font-size: 13px; color: var(--muted); }
+.chip { justify-self: end; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--pine-soft); color: var(--ink); white-space: nowrap; }
+.chip.okant { background: var(--amber-soft); }
+.chip.neutral { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.filters input, .filters select { width: 100%; }
+
+input, select, textarea { font: inherit; font-size: 16px; color: var(--ink); background-color: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
+label.check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; }
+label.check input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+.btn { font: inherit; font-size: 15px; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.primary { background: var(--pine); color: var(--pine-ink); border-color: var(--pine); }
+.btn.small { font-size: 14px; padding: 7px 11px; }
+.btn.danger { color: var(--red); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.btn:focus-visible, .item:focus-visible, .seg button:focus-visible, .tabs a:focus-visible, .cat-grid button:focus-visible, summary:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+
+/* Budget */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 2px 12px; }
+.brow { display: grid; grid-template-columns: 1fr 112px; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.brow:first-child { border-top: 0; }
+.brow .n { font-size: 15px; font-weight: 600; }
+.brow .d { font-size: 13px; color: var(--muted); }
+.brow .h { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.brow input { width: 100%; }
+.sumbar { position: sticky; bottom: calc(68px + env(safe-area-inset-bottom, 0px)); z-index: 4; margin-top: 16px; background: var(--ink); color: var(--bg); border-radius: 14px; padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.sumbar .k { font-size: 12px; opacity: .75; }
+.sumbar .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sumbar .v.neg { color: #F3A193; }
+.oneoff { display: grid; grid-template-columns: 1fr 104px 40px; gap: 6px; padding: 8px 0; border-top: 1px solid var(--line); }
+.oneoff:first-child { border-top: 0; }
+.oneoff input { width: 100%; }
+.iconbtn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 10px; cursor: pointer; }
+
+/* Rapport */
+.report { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.report .rh { background: var(--pine); color: var(--pine-ink); padding: 16px; display: flex; justify-content: space-between; gap: 10px; align-items: flex-end; }
+.report .rh h3 { margin: 0; font-family: "Iowan Old Style", Palatino, Georgia, serif; font-weight: 400; font-size: 26px; }
+.report .rh .p { font-size: 14px; opacity: .9; }
+.report .rh .o { font-size: 13px; opacity: .9; text-align: right; }
+.rcards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 14px; }
+.rcard { background: var(--bg); border-radius: 12px; padding: 10px 12px; }
+.rcard .k { font-size: 12px; color: var(--muted); }
+.rcard .v { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rcard .v.good { color: var(--pine); } .rcard .v.bad { color: var(--red); }
+.rtable { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rtable th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 8px 14px 6px; border-bottom: 1px solid var(--line); }
+.rtable td { padding: 8px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.rtable .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rtable tr.g td { background: var(--pine-soft); font-weight: 600; }
+.rtable tr.t td { font-weight: 700; border-top: 2px solid var(--pine); }
+.rtable .neg { color: var(--red); }
+.rtable .mini { height: 4px; background: var(--pine-soft); border-radius: 4px; margin-top: 5px; overflow: hidden; }
+.rtable .mini i { display: block; height: 100%; background: var(--pine); }
+.rtable .mini.over i { background: var(--red); }
+.rsec { padding: 14px 14px 4px; font-weight: 700; font-size: 15px; }
+.rnote { padding: 10px 14px 14px; font-size: 13px; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+
+/* Import */
+.drop { display: block; position: relative; border: 2px dashed var(--line); border-radius: 16px; padding: 22px 16px; text-align: center; background: var(--panel); cursor: pointer; }
+.drop strong { display: block; font-size: 17px; margin-bottom: 4px; }
+.drop span { color: var(--muted); font-size: 14px; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.log { font-size: 14px; margin-top: 10px; }
+.log div { padding: 6px 0; border-top: 1px solid var(--line); }
+.acc, .rule, .set { display: grid; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.acc { grid-template-columns: 1fr 140px; } .rule { grid-template-columns: 1fr auto; font-size: 14px; } .set { grid-template-columns: 1fr 120px; }
+.acc:first-child, .rule:first-child, .set:first-child { border-top: 0; }
+.set .h, .acc .h { font-size: 12px; color: var(--muted); }
+.empty { text-align: center; color: var(--muted); padding: 28px 12px; }
+.steps { counter-reset: s; list-style: none; padding: 0; margin: 12px 0; text-align: left; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 28px 1fr; gap: 10px; padding: 8px 0; color: var(--ink); font-size: 15px; }
+.steps li::before { content: counter(s); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--pine); color: var(--pine-ink); font-weight: 700; font-size: 13px; }
+
+nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--panel); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+nav.tabs .in { display: grid; grid-template-columns: repeat(5, 1fr); max-width: 760px; margin: 0 auto; }
+nav.tabs a { text-decoration: none; color: var(--muted); text-align: center; padding: 9px 2px 11px; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; position: relative; }
+nav.tabs a svg { width: 22px; height: 22px; }
+nav.tabs a[aria-current="page"] { color: var(--pine); font-weight: 600; }
+nav.tabs .badge { position: absolute; top: 4px; left: 50%; margin-left: 6px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--amber); color: #fff; font-size: 11px; line-height: 18px; }
+
+.sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet-bg[hidden] { display: none; }
+.sheet { background: var(--panel); width: 100%; max-width: 760px; max-height: 88vh; overflow: auto; border-radius: 18px 18px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+.sheet h4 { margin: 0 0 2px; font-size: 17px; }
+.sheet .m { color: var(--muted); font-size: 14px; margin-bottom: 10px; }
+.cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 8px 0 14px; }
+.cat-grid button { font: inherit; font-size: 14px; text-align: left; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.cat-grid button[aria-pressed="true"] { background: var(--pine); color: var(--pine-ink); border-color: var(--pine); }
+.cat-desc { font-size: 13px; color: var(--muted); min-height: 18px; margin-bottom: 10px; }
+.sheet .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 999px; font-size: 14px; z-index: 30; max-width: 92vw; text-align: center; }
+.toast[hidden] { display: none; }
+.privacy { font-size: 13px; color: var(--muted); margin-top: 18px; }
+@media (min-width: 560px) { .cat-grid { grid-template-columns: repeat(3, 1fr); } .rcards { grid-template-columns: repeat(4, 1fr); } }
+
+/* v3 */
+.strip { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; font-size: 13px; color: var(--muted); margin: 0 0 12px; line-height: 1.5; }
+.strip b { color: var(--ink); font-weight: 600; }
+.eq { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+.eq .row { display: grid; grid-template-columns: 1fr auto 1fr auto 1.2fr; align-items: end; gap: 6px; }
+.eq .op { font-size: 22px; color: var(--muted); padding-bottom: 4px; }
+.eq .k { font-size: 12px; color: var(--muted); }
+.eq .v { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.eq .res .v { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-weight: 400; font-size: clamp(26px, 8vw, 36px); color: var(--pine); }
+.eq .res.neg .v { color: var(--red); }
+.eq .prog { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 14px; }
+.eq .prog b { font-variant-numeric: tabular-nums; }
+.stack { display: flex; height: 14px; border-radius: 999px; overflow: hidden; background: var(--pine-soft); margin: 14px 0 8px; }
+.stack i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.legend b { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
+.trust { font-size: 13px; color: var(--muted); margin-top: 10px; }
+details.grp { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; margin-top: 10px; }
+details.grp > summary { list-style: none; cursor: pointer; padding: 12px 14px; }
+details.grp > summary::-webkit-details-marker { display: none; }
+details.grp > summary .r1 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+details.grp > summary .t { font-weight: 700; font-size: 16px; }
+details.grp > summary .t::after { content: " ▸"; color: var(--muted); font-weight: 400; }
+details.grp[open] > summary .t::after { content: " ▾"; }
+details.grp > summary .s { font-size: 14px; color: var(--muted); white-space: nowrap; }
+details.grp > summary .s b { color: var(--ink); font-variant-numeric: tabular-nums; }
+details.grp > summary .d { font-size: 13px; color: var(--muted); margin-top: 2px; }
+details.grp .inner { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+.sortlist { display: flex; flex-direction: column; gap: 8px; }
+.sitem { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.sitem .r1 { display: flex; justify-content: space-between; gap: 10px; }
+.sitem .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sitem .a { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sitem .m { font-size: 13px; color: var(--muted); margin: 2px 0 8px; }
+.sitem .q { display: flex; flex-wrap: wrap; gap: 6px; }
+.sitem .q button { font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.sitem .q button.ok { background: var(--pine); color: var(--pine-ink); border-color: var(--pine); }
+.tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); margin-left: 4px; vertical-align: 1px; }
+.tag.gissning { border-color: var(--amber); color: var(--amber); }
+.tag.okant { background: var(--amber-soft); border-color: transparent; color: var(--ink); }
+.bud { padding: 10px 0; border-top: 1px solid var(--line); }
+.bud:first-child { border-top: 0; }
+.bud .top { display: grid; grid-template-columns: 1fr 108px; gap: 10px; align-items: center; }
+.bud .n { font-size: 15px; font-weight: 600; }
+.bud .d { font-size: 12.5px; color: var(--muted); }
+.bud input { width: 100%; }
+.bud .out { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.bud .out .neg { color: var(--red); }
+.bud .bar { margin-top: 4px; height: 6px; }
+.bud.over .bar i { background: var(--red); } .bud.warn .bar i { background: var(--amber); }
+.gpanel h3 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.gpanel h3 span { font-size: 13px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.yrows { display: flex; flex-direction: column; gap: 4px; }
+.yrow { display: grid; grid-template-columns: 96px 1fr 84px; gap: 8px; align-items: center; font-size: 13px; }
+.yrow .lab { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.yrow .track { position: relative; height: 16px; }
+.yrow .track .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line); }
+.yrow .track i { position: absolute; top: 2px; height: 12px; border-radius: 3px; }
+.yrow .val { text-align: right; font-variant-numeric: tabular-nums; }
+.yrow .val.neg { color: var(--red); }
+.ytable { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ytable th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.ytable td { padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.ytable .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ytable .neg { color: var(--red); }
+.ytable tr.t td { font-weight: 700; border-top: 2px solid var(--pine); }
+.keyrow { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 8px 0 10px; font-size: 14px; }
+.keyrow input { width: 100%; text-transform: uppercase; }
+.bolan { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 6px; padding: 6px 0; }
+.bolan input { width: 100%; }
+
+#yCards .rcard { background: var(--panel); border: 1px solid var(--line); }
+
+/* v4: färger per grupp, tydliga rubriker */
+:root { --c-fast: #1D5A43; --c-rorlig: #3F8F6B; --c-ovr: #B7791F; --c-in: #2E6A8E; --c-buf: #5A5CA6;
+  --t-fast: #E1EDE6; --t-rorlig: #E4F1EA; --t-ovr: #F6EBD7; --t-in: #E1ECF3; --t-buf: #E8E8F5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-fast: #56AE86; --c-rorlig: #7CC6A2; --c-ovr: #E2A54A; --c-in: #6FAAD3; --c-buf: #9C9EE8;
+  --t-fast: #1B3128; --t-rorlig: #1E352B; --t-ovr: #3A2D16; --t-in: #1A2B37; --t-buf: #24253D; } }
+:root[data-theme="dark"] { --c-fast: #56AE86; --c-rorlig: #7CC6A2; --c-ovr: #E2A54A; --c-in: #6FAAD3; --c-buf: #9C9EE8;
+  --t-fast: #1B3128; --t-rorlig: #1E352B; --t-ovr: #3A2D16; --t-in: #1A2B37; --t-buf: #24253D; }
+main h2 { font-size: 32px; margin: 4px 0 8px; }
+main h3 { font-size: 19px; font-weight: 700; letter-spacing: -.01em; margin: 30px 0 10px; padding: 2px 0 2px 12px; border-left: 5px solid var(--pine); line-height: 1.3; }
+main h3.c-fast { border-left-color: var(--c-fast); } main h3.c-rorlig { border-left-color: var(--c-rorlig); } main h3.c-ovr { border-left-color: var(--c-ovr); }
+main h3.c-in { border-left-color: var(--c-in); } main h3.c-buf { border-left-color: var(--c-buf); }
+main h3 + p.hint { margin-top: -4px; }
+.seg + .strip, .seg { margin-bottom: 10px; }
+details.grp { border-left: 6px solid var(--gc, var(--pine)); }
+details.grp > summary { background: var(--gt, transparent); border-radius: 8px 13px 0 0; }
+details.grp:not([open]) > summary { border-radius: 8px 13px 13px 8px; }
+details.grp > summary .t { font-size: 17px; }
+details.grp .inner { padding-top: 10px; }
+.g-fast { --gc: var(--c-fast); --gt: var(--t-fast); } .g-rorlig { --gc: var(--c-rorlig); --gt: var(--t-rorlig); }
+.g-ovr { --gc: var(--c-ovr); --gt: var(--t-ovr); } .g-in { --gc: var(--c-in); --gt: var(--t-in); }
+.g-fast .bar i, .g-rorlig .bar i, .g-ovr .bar i, .g-in .bar i { background: var(--gc); }
+.g-fast details.env::before, .g-rorlig details.env::before, .g-ovr details.env::before, .g-in details.env::before { background: var(--gc); opacity: .55; }
+details.env.warn .bar i { background: var(--amber) !important; } details.env.over .bar i { background: var(--red) !important; }
+.gpanel { margin-top: 26px; }
+.gpanel h3 { margin-top: 0; border-left-color: var(--gc); }
+.gpanel .panel { border-top: 4px solid var(--gc); }
+.gpanel .bud .bar i { background: var(--gc); }
+.gpanel .bud.over .bar i { background: var(--red); } .gpanel .bud.warn .bar i { background: var(--amber); }
+.eq { border-top: 4px solid var(--c-in); }
+.bufcard { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--c-buf); border-radius: 14px; padding: 12px 14px; }
+.bufcard .k { font-size: 13px; color: var(--muted); }
+.bufcard .v { font-size: 26px; font-family: "Iowan Old Style", Palatino, Georgia, serif; font-variant-numeric: tabular-nums; }
+.bufcard .d { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.bufcard .d .up { color: var(--pine); font-weight: 600; } .bufcard .d .down { color: var(--red); font-weight: 600; }
+.bufform { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.bufform .btn { grid-column: 1 / -1; }
+.bufform input { width: 100%; min-width: 0; }
+.notice { margin-top: 22px; }
+
+/* v5 */
+.saveerr { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 58px); z-index: 7; max-width: 760px; margin: 8px auto 0; background: var(--red-soft); color: var(--ink); border: 1px solid var(--red); border-radius: 12px; padding: 10px 12px; font-size: 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.saveerr[hidden] { display: none; }
+#budget:not(.cmp-on) .cmp { display: none; }
+.toastbtn { font: inherit; font-size: 14px; font-weight: 700; background: transparent; border: 0; color: var(--pine-soft); text-decoration: underline; cursor: pointer; padding: 0 0 0 6px; }
+nav.tabs .badge { background: #8A4F00; color: #FFFFFF; }
+.warn { color: var(--amber); }
+.log .warn { color: var(--ink); background: var(--amber-soft); border-radius: 8px; padding: 6px 8px; border-top: 0; margin: 4px 0; }
+.acc { grid-template-columns: 1fr; }
+.accr { display: flex; gap: 8px; flex-wrap: wrap; }
+.accr select { flex: 1 1 140px; }
+.acc .an { font-weight: 600; }
+.set label { display: block; }
+.set label .h { display: block; }
+
+/* v6: sex flikar */
+nav.tabs .in { grid-template-columns: repeat(6, 1fr); }
+nav.tabs a { font-size: 10.5px; padding-left: 0; padding-right: 0; }
+nav.tabs a svg { width: 21px; height: 21px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row">
+    <h1 class="brand">Kassabok</h1>
+    <select id="period" class="period" aria-label="Löneperiod"></select>
+  </div>
+</header>
+
+<div class="saveerr" id="saveError" role="alert" hidden><span>Kunde inte spara i webbläsaren. Spara en säkerhetskopia nu så att inget går förlorat.</span> <button type="button" class="btn small" id="errBackup">Spara säkerhetskopia</button></div>
+<main>
+  <!-- ÖVERSIKT -->
+  <section id="oversikt">
+    <div id="ovEmpty"></div>
+    <div id="ovBody">
+      <div class="strip" id="ovStrip"></div>
+      <h3 class="c-in">Resultat för perioden</h3>
+      <div class="eq">
+        <div class="row">
+          <div><div class="k">Inkomst</div><div class="v" id="eqIn">0</div></div>
+          <div class="op">−</div>
+          <div><div class="k">Utgifter</div><div class="v" id="eqUt">0</div></div>
+          <div class="op">=</div>
+          <div class="res" id="eqResBox"><div class="k" id="eqResK">Plus</div><div class="v" id="eqRes">0</div></div>
+        </div>
+        <div class="prog" id="eqProg"></div>
+      </div>
+      <h3 class="c-fast">Vart pengarna gick</h3>
+      <div class="stack" id="stack" aria-hidden="true"></div>
+      <div class="legend" id="legend"></div>
+      <div id="unknownNotice"></div>
+      <div class="trust" id="trust"></div>
+      <h3 class="c-buf">Buffert</h3>
+      <div class="bufcard">
+        <div class="bufhead"><div><div class="k" id="bufLabel">Buffertkonto</div><div class="v" id="bufVal">Inget saldo angivet</div><div class="d" id="bufDiff"></div></div></div>
+        <div class="bufform">
+          <input type="month" id="bufMonth" aria-label="Månad">
+          <input type="number" id="bufAmt" inputmode="numeric" step="100" min="0" placeholder="Saldo" aria-label="Saldo i kronor">
+          <button type="button" class="btn primary small" id="bufSave">Spara</button>
+        </div>
+        <div class="d">Skriv in saldot en gång i månaden, gärna på lönedagen. Historiken ser du under Historik.</div>
+      </div>
+      <h3 class="c-rorlig">Kuvert</h3>
+      <p class="hint">Tryck på en grupp för att se kuverten.</p>
+      <label class="check" style="margin:0 0 6px"><input type="checkbox" id="ovFordela"><span>Fördela överföringen till gemensamt på boende, mat och övrigt. Summan ändras inte.</span></label>
+      <div id="groups"></div>
+      <details class="help" style="margin-top:16px">
+        <summary>Hur läser jag översikten?</summary>
+        <ul>
+          <li>Översikten visar <b>din ekonomi</b>: dina egna konton. Det gemensamma kontot har en egen flik.</li>
+          <li>Det du för över till gemensamt räknas som kostnaden <b>Gemensamt konto</b>, oavsett vad pengarna sedan används till.</li>
+          <li>Överföringar till sparande och mellan dina egna konton räknas inte som utgifter.</li>
+          <li><b>Prognosen</b> räknar med att du håller budgeten resten av perioden.</li>
+          <li>Kryssa i <b>Fördela</b> om du vill se överföringen uppdelad på boende, mat och annat, i samma proportioner som pengarna användes. Summan är densamma.</li>
+          <li><b>Sorterat enligt regler eller av dig</b> är den del av utgifterna som inte bygger på gissningar.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- SORTERA -->
+  <section id="sortera" hidden>
+    <h2>Sortera</h2>
+    <p class="lead">Poster som behöver dig: okända, Klarna och liknande, samt appens gissningar. Ett tryck räcker.</p>
+    <div class="seg" role="group" aria-label="Vilka poster">
+      <button type="button" data-sscope="period" aria-pressed="true">Vald period</button>
+      <button type="button" data-sscope="alla" aria-pressed="false">Alla perioder</button>
+    </div>
+    <h3 class="c-ovr">Att sortera</h3>
+    <div class="sortlist" id="sortList"></div>
+    <details class="help" style="margin-top:14px">
+      <summary>Så lär sig appen</summary>
+      <ul>
+        <li>När du väljer kategori skapas en regel för texten, till exempel att allt som börjar med ICA NARA blir Mat. Nästa gång sorteras den automatiskt.</li>
+        <li>Klarna, Svea och liknande får ingen regel, eftersom samma betalsätt används till olika köp.</li>
+        <li><b>Stämmer</b> godkänner appens gissning.</li>
+        <li><b>Annat</b> öppnar alla kategorier, där du också kan ändra vad regeln ska gälla.</li>
+        <li>Dina regler ser och tar du bort under Importera.</li>
+      </ul>
+    </details>
+    <h3>Alla poster</h3>
+    <div class="filters">
+      <select id="fCat" aria-label="Kategori"></select>
+      <select id="fAcc" aria-label="Konto"></select>
+      <input id="fSearch" type="search" placeholder="Sök text" aria-label="Sök text">
+      <select id="fScope" aria-label="Period">
+        <option value="period">Vald period</option>
+        <option value="alla">Alla perioder</option>
+      </select>
+    </div>
+    <div class="list" id="txList"></div>
+    <p class="hint" id="txCount"></p>
+  </section>
+
+  <!-- BUDGET -->
+  <section id="budget" hidden>
+    <h2>Budget och utfall</h2>
+    <div class="strip" id="bStrip"></div>
+    <p class="hint" id="bOrigin"></p>
+    <label class="check" style="margin:0 0 12px"><input type="checkbox" id="bCmp"><span>Visa beskrivningar, rekommenderat och förra perioden</span></label>
+    <details class="help">
+      <summary>Så använder du budgeten</summary>
+      <ol>
+        <li>Kontrollera <b>Inkomst</b>. Den fylls i med det som kommit in i perioden.</li>
+        <li>Skriv belopp per kategori. Under varje rad ser du utfallet hittills och vad som är kvar.</li>
+        <li>Rekommenderat för Gemensamt konto är snittet av dina tre senaste perioders överföringar.</li>
+        <li>Lägg till planerade större köp under <b>Engångskostnader</b>.</li>
+        <li>Spara perioden som PDF eller Excel längst ner. Allt du skriver sparas direkt.</li>
+      </ol>
+    </details>
+    <h3 class="c-in">Inkomst</h3>
+    <div class="panel">
+      <div class="bud"><div class="top"><div><div class="n">Inkomst</div><div class="d" id="incHint"></div></div><input id="bInc" type="number" inputmode="numeric" step="100" min="0" aria-label="Inkomst"></div></div>
+    </div>
+    <div id="bGroups"></div>
+    <h3 class="c-ovr">Engångskostnader</h3>
+    <p class="hint">Planerade köp i perioden, till exempel service på bilen eller en present.</p>
+    <div class="panel" id="bOneoffs"></div>
+    <div class="btns">
+      <button type="button" class="btn small" id="addOneoff">Lägg till engångskostnad</button>
+      <button type="button" class="btn small" id="bPrev">Kopiera förra periodens budget</button>
+      <button type="button" class="btn small" id="bRek">Fyll med rekommenderat</button>
+    </div>
+    <h3>Spara perioden</h3>
+    <p class="hint">PDF är en sida med budget mot utfall. Excel har budget med formler, utfall per period, alla poster och dina regler.</p>
+    <div class="btns">
+      <button type="button" class="btn primary" id="savePdf">Spara som PDF</button>
+      <button type="button" class="btn" id="saveXlsx">Spara som Excel</button>
+    </div>
+    <div class="sumbar" aria-live="polite">
+      <div><div class="k">Inkomst</div><div class="v" id="sbInc">0</div></div>
+      <div><div class="k">Budget</div><div class="v" id="sbBud">0</div></div>
+      <div><div class="k">Kvar att spara</div><div class="v" id="sbLeft">0</div></div>
+    </div>
+  </section>
+
+  <!-- ÅR -->
+  <section id="ar" hidden>
+    <h2>Historik</h2>
+    <p class="lead">Hur det gått de senaste tolv perioderna eller månaderna.</p>
+    <div class="btns" style="margin-top:0">
+      <div class="seg" role="group" aria-label="Indelning">
+        <button type="button" data-ymode="lon" aria-pressed="true">Lön till lön</button>
+        <button type="button" data-ymode="manad" aria-pressed="false">Kalendermånad</button>
+      </div>
+      <div class="seg" role="group" aria-label="Urval">
+        <button type="button" data-yscope="mitt" aria-pressed="true">Min ekonomi</button>
+        <button type="button" data-yscope="gemensamt" aria-pressed="false">Gemensamt</button>
+      </div>
+    </div>
+    <div class="strip" id="yStrip"></div>
+    <h3>Sammanfattning</h3>
+    <div class="rcards" id="yCards" style="padding:0 0 12px"></div>
+    <h3 class="c-in">Plus eller minus per period</h3>
+    <div class="yrows" id="yRows"></div>
+    <h3>Per period</h3>
+    <div class="tablewrap"><table class="ytable" id="yTable"></table></div>
+    <h3>Kategorier</h3>
+    <p class="hint">Summa och snitt per period för de valda perioderna.</p>
+    <div class="tablewrap"><table class="ytable" id="yCats"></table></div>
+    <h3 class="c-buf">Buffert över tid</h3>
+    <p class="hint">Saldot på buffertkontot som du angett varje månad.</p>
+    <div class="yrows" id="bufRows"></div>
+    <div class="tablewrap"><table class="ytable" id="bufTable"></table></div>
+  </section>
+
+  <!-- GEMENSAMT -->
+  <section id="gemensamt" hidden>
+    <h2>Gemensamt</h2>
+    <p class="lead">Det gemensamma kontot för sig: vad som sattes in, vad pengarna gick till och vad som blev över.</p>
+    <div id="jEmpty"></div>
+    <div id="jBody">
+      <div class="strip" id="jStrip"></div>
+      <h3 class="c-in">Resultat på kontot</h3>
+      <div class="eq">
+        <div class="row">
+          <div><div class="k">Insatt</div><div class="v" id="jIn">0</div></div>
+          <div class="op">−</div>
+          <div><div class="k">Utgifter</div><div class="v" id="jUt">0</div></div>
+          <div class="op">=</div>
+          <div class="res" id="jResBox"><div class="k" id="jResK">Kvar på kontot</div><div class="v" id="jRes">0</div></div>
+        </div>
+        <div class="prog" id="jAndel"></div>
+      </div>
+      <h3 class="c-fast">Vad pengarna gick till</h3>
+      <div id="jGroups"></div>
+      <h3>Största utgifterna</h3>
+      <div class="tablewrap"><table class="ytable"><tbody id="jTop"></tbody></table></div>
+      <details class="help" style="margin-top:16px">
+        <summary>Hur hänger det ihop med min ekonomi?</summary>
+        <ul>
+          <li>Den här vyn är helt skild från din egen ekonomi och påverkar inte ditt resultat.</li>
+          <li>Det du satte in här syns som kostnaden Gemensamt konto i din översikt.</li>
+          <li>Insättningar som inte kommer från dina konton räknas som sambons.</li>
+          <li>Andelen är bara information om hur insättningarna fördelade sig.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- IMPORTERA -->
+  <section id="konton" hidden>
+    <h2>Importera</h2>
+    <p class="lead">Läs in kontoutdrag från Handelsbanken. Gör det vid varje lön, för alla konton.</p>
+    <label class="drop" id="drop">
+      <strong>Välj kontoutdrag</strong>
+      <span>Excel-filer från Handelsbanken, flera på en gång går bra</span>
+      <input type="file" id="file" multiple accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
+    </label>
+    <div class="log" id="log"></div>
+    <details class="help">
+      <summary>Så tar du fram kontoutdragen</summary>
+      <ol>
+        <li>Logga in på Handelsbankens internetbank och öppna kontot.</li>
+        <li>Välj period och exportera transaktionerna som Excel. Gör samma sak för varje konto.</li>
+        <li>Välj alla filerna här. Poster som redan finns hoppas över, även om perioderna överlappar.</li>
+        <li>Exporten stannar vid 1 000 rader. Ta äldre historik i bitar om några månader åt gången.</li>
+      </ol>
+    </details>
+
+    <h3>Konton</h3>
+    <p class="hint">Ange vilket konto som är gemensamt. Det visas i en egen flik, och dina överföringar dit räknas som kostnad.</p>
+    <div class="panel" id="accList"></div>
+
+    <h3>Inställningar</h3>
+    <div class="panel">
+      <div class="set"><label for="sMinLon">Lägsta belopp för lön<span class="h">en eller flera insättningar inom tio dagar som tillsammans når beloppet startar en ny period</span></label><input type="number" id="sMinLon" min="0" step="1000" inputmode="numeric"></div>
+      <div class="set"><label for="sStart">Startdag om ingen lön finns<span class="h">dag i månaden, används för månader utan lön</span></label><input type="number" id="sStart" min="1" max="28" step="1" inputmode="numeric"></div>
+      <div class="set"><label for="sBuf">Namn på buffertkontot<span class="h">visas i rutan Buffert</span></label><input type="text" id="sBuf" autocomplete="off"></div>
+      <div class="set"><label for="sNamn">Ditt förnamn<span class="h">poster som börjar med ditt namn föreslås som överföring till eget konto</span></label><input type="text" id="sNamn" autocomplete="off"></div>
+    </div>
+
+    <h3>Dina regler</h3>
+    <p class="hint">Skapas när du sorterar poster. Du kan också läsa in regler från en fil, de läggs till dina befintliga.</p>
+    <div class="panel" id="ruleList"></div>
+    <div class="btns"><label class="btn small" for="loadRulesFile">Läs in regler från fil</label><input type="file" id="loadRulesFile" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0"></div>
+
+    <h3>Säkerhetskopia</h3>
+    <p class="hint">Flytta allt mellan telefon och dator, eller spara en kopia för säkerhets skull.</p>
+    <div class="btns">
+      <button type="button" class="btn" id="saveBackup">Spara säkerhetskopia</button>
+      <label class="btn" for="loadBackupFile">Läs in säkerhetskopia</label>
+      <input type="file" id="loadBackupFile" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0">
+    </div>
+    <div class="btns"><button type="button" class="btn danger" id="wipe">Radera all data</button></div>
+    <p class="privacy">Allt du läser in stannar på den här enheten. Appen kan inte skicka data någonstans, det spärras i appen. Ta en säkerhetskopia ibland, iPhone kan i sällsynta fall rensa webbdata.</p>
+  </section>
+</main>
+
+<nav class="tabs" aria-label="Huvudmeny">
+  <div class="in">
+    <a href="#oversikt" data-tab="oversikt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 8l9 6 9-6"/></svg>Översikt</a>
+    <a href="#sortera" data-tab="sortera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6"/></svg>Sortera<span id="unkBadge"></span></a>
+    <a href="#budget" data-tab="budget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Budget</a>
+    <a href="#ar" data-tab="ar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Historik</a>
+    <a href="#gemensamt" data-tab="gemensamt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 11l9-7 9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg>Gemensamt</a>
+    <a href="#konton" data-tab="konton"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Importera</a>
+  </div>
+</nav>
+
+<div class="sheet-bg" id="sheetBg" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h4 id="sheetTitle"></h4>
+    <div class="m" id="sheetMeta"></div>
+    <div class="cat-grid" id="sheetCats"></div>
+    <div class="cat-desc" id="sheetDesc"></div>
+    <label class="check"><input type="checkbox" id="sheetRemember"><span id="sheetRememberText">Kom ihåg till nästa gång</span></label>
+    <div class="keyrow" id="sheetKeyRow"><label for="sheetKey">Gäller alla poster som börjar med</label><input type="text" id="sheetKey" autocomplete="off"><div class="hint" id="sheetAffected" style="margin:2px 0 0"></div></div>
+    <div class="actions">
+      <button type="button" class="btn" id="sheetReset">Appens förslag</button>
+      <button type="button" class="btn" id="sheetCancel">Avbryt</button>
+      <button type="button" class="btn primary" id="sheetSave">Spara</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/* Kassabok, kärnlogik. Ingen DOM här, så den går att testa fristående. */
+(function (G) {
+  'use strict';
+
+  // ---------- Kategorier ----------
+  // grupp: fast = dras varje månad, rorlig = går att påverka från dag till dag, ovr = engång, spel och osorterat
+  const CATS = [
+    { id: 'lon', namn: 'Lön', typ: 'in', besk: 'Lön från arbetsgivare.' },
+    { id: 'bidrag', namn: 'FK och barnbidrag', typ: 'in', besk: 'Barnbidrag och ersättning från Försäkringskassan.' },
+    { id: 'sambo', namn: 'Sambons insättning', typ: 'in', besk: 'Insättningar på gemensamt konto som inte kommer från dig. Visas bara i vyn Gemensamt.' },
+    { id: 'ovrig_inkomst', namn: 'Övrig inkomst', typ: 'in', besk: 'Utdelning, skatteåterbäring och annat.' },
+    { id: 'fran_mig', namn: 'Från dig', typ: 'in', besk: 'Dina överföringar till det gemensamma kontot. Visas bara i vyn Gemensamt.' },
+    { id: 'gemensamt', namn: 'Gemensamt konto', typ: 'ut', grupp: 'fast', rek: 0, besk: 'Det du för över till det gemensamma kontot. Det är din kostnad för hushållet, oavsett vad pengarna används till.' },
+    { id: 'boende', namn: 'Boende', typ: 'ut', grupp: 'fast', rek: 0, besk: 'Bolån, hyra, el, VA och avfall.' },
+    { id: 'bil', namn: 'Bil', typ: 'ut', grupp: 'fast', rek: 3000, besk: 'Leasing, avbetalning, laddning, bränsle, parkering, service och fordonsskatt.' },
+    { id: 'forsakring', namn: 'Försäkring och a-kassa', typ: 'ut', grupp: 'fast', rek: 300, besk: 'Hem, bil och andra försäkringar samt a-kassa.' },
+    { id: 'abonnemang', namn: 'Abonnemang', typ: 'ut', grupp: 'fast', rek: 1200, besk: 'Mobil, streaming, appar och tjänster.' },
+    { id: 'traning', namn: 'Träning', typ: 'ut', grupp: 'fast', rek: 580, besk: 'Gym och träningstjänster.' },
+    { id: 'krediter', namn: 'Krediter och avbetalningar', typ: 'ut', grupp: 'fast', rek: 0, besk: 'Lån och avbetalningar utöver bilarna.' },
+    { id: 'mat', namn: 'Mat', typ: 'ut', grupp: 'rorlig', rek: 3000, besk: 'Livsmedel och Systembolaget.' },
+    { id: 'restaurang', namn: 'Restaurang och snabbmat', typ: 'ut', grupp: 'rorlig', rek: 1000, besk: 'Restaurang, snabbmat, kafé och hämtmat.' },
+    { id: 'shopping', namn: 'Kläder och shopping', typ: 'ut', grupp: 'rorlig', rek: 2500, besk: 'Kläder, elektronik, hem och annat du köper.' },
+    { id: 'barn', namn: 'Barn', typ: 'ut', grupp: 'rorlig', rek: 500, besk: 'Barnkläder, leksaker och barnartiklar.' },
+    { id: 'halsa', namn: 'Hälsa', typ: 'ut', grupp: 'rorlig', rek: 800, besk: 'Apotek, tandvård och vård.' },
+    { id: 'noje', namn: 'Nöje', typ: 'ut', grupp: 'rorlig', rek: 800, besk: 'Utflykter, nöjesparker, bio och resor.' },
+    { id: 'swish', namn: 'Swish privat', typ: 'ut', grupp: 'rorlig', rek: 1000, besk: 'Swish till privatpersoner.' },
+    { id: 'ovrigt', namn: 'Övrigt', typ: 'ut', grupp: 'rorlig', rek: 500, besk: 'Avgifter, föreningar och sådant som inte passar någon annanstans.' },
+    { id: 'engang', namn: 'Engångskostnader', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Planerade större köp. Lägg in dem som egna rader under Budget.' },
+    { id: 'spel', namn: 'Spel', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Spel och betting, netto.' },
+    { id: 'okant', namn: 'Okänt', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Poster som behöver sorteras. Tryck på dem under Poster.' },
+    { id: 'sparande', namn: 'Sparande och egna konton', typ: 'neutral', besk: 'Överföringar till sparande och konton du inte läst in. Räknas inte som utgift.' },
+    { id: 'intern', namn: 'Intern överföring', typ: 'neutral', besk: 'Överföringar mellan dina inlästa konton. Räknas bort.' },
+  ];
+  const GRUPPER = [
+    { id: 'fast', namn: 'Fasta kostnader', besk: 'Dras varje månad och ändras sällan.' },
+    { id: 'rorlig', namn: 'Rörliga kostnader', besk: 'Här styr du själv från dag till dag.' },
+    { id: 'ovr', namn: 'Engångs, spel och osorterat', besk: 'Planerade köp, spel och poster som väntar på kategori.' },
+  ];
+  const CAT = Object.fromEntries(CATS.map((c) => [c.id, c]));
+
+  // Regler: s = delsträng (skiftlägesokänslig), r = reguljärt uttryck. Första träff vinner.
+  const SEED_RULES = [
+    // Spel först, så att kodade mottagare inte hamnar fel
+    ...['CASINO', 'LEOVEGAS', 'SPEEDYCASINO', 'FUNKYSPINS', 'LYLLO', 'CASINOSTUGAN', 'SNABBARE', 'UNIBET', 'BETSSON', 'SVENSKA SPEL'].map((s) => ({ s, c: 'spel' })),
+    { r: '^(PAF|ATG|CHERRY)$', c: 'spel' },
+    // Betalsätt för olika köp hamnar i Okänt och sorteras för hand (före bil, eftersom kreditkortet heter Circle K)
+    ...['CIRCLE K MASTE', 'KLARNA', 'SVEA BANK', 'QLIRO', 'WALLEY', 'AVARDA', 'SWEDBANK PAY', 'RESURS', 'QVICKLY'].map((s) => ({ s, c: 'okant', betalsatt: true })),
+    { s: 'COLLECTIA', c: 'krediter' },
+    ...['KORTAVGIFT', 'UTTAGSAVGIFT'].map((s) => ({ s, c: 'ovrigt' })),
+    // Inkomster
+    { r: '^l(ö|o)n\\b', c: 'lon' },
+    ...['FKASSA', 'BARNB', 'FÖRSÄKRINGSKASSAN'].map((s) => ({ s, c: 'bidrag' })),
+    { s: 'UTDELNING', c: 'ovrig_inkomst' },
+    { r: '^SK\\d{6,}$', c: 'ovrig_inkomst' },
+    // Överföringar och sparande
+    { r: '^(ö|o)verf', c: 'sparande' },
+    ...['LYSA', 'AVANZA', 'NORDAX', 'NORDNET', 'SBAB'].map((s) => ({ s, c: 'sparande' })),
+    // Boende
+    ...['STADSHYPOTEK', 'E.ON', 'VATTENFALL', 'TIBBER', 'ELLEVIO'].map((s) => ({ s, c: 'boende' })),
+    // Försäkring
+    ...['LF SKÅNE', 'LÄNSFÖRSÄKRING', 'IF SKADE', 'LEDARNAS', 'A-KASS'].map((s) => ({ s, c: 'forsakring' })),
+    // Mat
+    ...['ICA', 'COOP', 'MATOPPET', 'MAT¦PPET', 'HEMKOP', 'HEMKÖP', 'WILLYS', 'CITY GROSS', 'LIDL', 'X:-TRA', 'NARA DIG', 'SYSTEMBOLAGET', 'FAZER'].map((s) => ({ s, c: 'mat' })),
+    // Bil
+    ...['VOLKSWAGEN', 'CIRCLE K', 'PREEM', 'OKQ8', 'SHELL', 'INGO', 'ST1', 'EASYPARK', 'PARKSTER', 'AIMO PARK', 'LAZERCAR', 'TRANSPORTSTYRE', 'LF MOTOR', 'BILTEMA', 'MOTORCITY', 'ÖRESUNDSBRO', 'SKODA'].map((s) => ({ s, c: 'bil' })),
+    // Restaurang
+    ...['MCD', 'MCDONALD', 'MAX ', 'MAX BURG', 'BURGER', 'KFC', 'WOLT', 'FOODORA', 'PIZZ', 'SUSHI', 'RESTAURANG', 'PUB', 'ESPRESSO', 'PATISSERIE', 'HEMGLASS', 'DOBBS', 'D@NER', 'DÖNER', 'FALAF', 'GRILL', 'SMASHBURGER', 'PINCHOS', 'KONDITORI'].map((s) => ({ s, c: 'restaurang' })),
+    // Barn
+    ...['BABYSAM', 'BABYLAND', 'JOLLYROOM', 'LEKIA', 'BR LEKSAKER', 'POLARN'].map((s) => ({ s, c: 'barn' })),
+    // Träning
+    ...['FITNESS', 'NORDIC WELLNESS', 'SATS', 'SPORTADMIN'].map((s) => ({ s, c: 'traning' })),
+    // Shopping
+    ...['ZALANDO', 'ADIDAS', 'JACKJONES', 'LINDEX', 'STADIUM', 'JACKS SPORT', 'NETONNET', 'ELGIGANTEN', 'JULA', 'RUSTA', 'CLAS', 'KJELL', 'IKEA', 'XXXLUTZ', 'BAUHAUS', 'NOTINO', 'AHLENS', 'ÅHLENS', 'KAPPAHL', 'HM ONLINE', 'H&M', 'BOOZT', 'AMAZON', 'TRADERA', 'BLOCKET', 'DOLLARSTORE', 'JEM FIX', 'GLIMRA', 'AKADEMIBOK', 'ADLIBRIS', 'BOKHANDEL', 'CARDLAND', 'MICHAELKOR'].map((s) => ({ s, c: 'shopping' })),
+    // Nöje
+    ...['LEGOLAND', 'LALANDIA', 'BAKKEN', 'TIVOLI', 'BIO', 'UBER', 'UBR*', 'TROPIKARIET', 'RIDETICKET'].map((s) => ({ s, c: 'noje' })),
+    // Abonnemang
+    ...['NETFLIX', 'DISNEY', 'HBO', 'TV4', 'SPOTIFY', 'STORYTEL', 'APPLE.COM', 'PATREON', 'TELE2', 'VIMLA', 'ANTHROPIC', 'OPENAI', 'GOOGLE', 'RATSIT', 'RINKEL', 'STRATO', 'WIX', 'BLIZZARD'].map((s) => ({ s, c: 'abonnemang' })),
+    // Hälsa
+    ...['APOTE', 'FOLKTAND', 'KRONANS', 'REGION SK', 'VÅRDCENTRAL', 'SVEAKLINIKEN'].map((s) => ({ s, c: 'halsa' })),
+    // Övrigt
+    { s: 'SKATTEVERKET', c: 'ovrigt' },
+    { s: 'PERSONUPPGIFT', c: 'swish' },
+  ];
+
+  function norm(t) { return String(t || '').trim().replace(/\s+/g, ' '); }
+
+  // Nyckel för inlärda regler: versaler, utan prefix som K* och PAY*, utan siffror och skiljetecken
+  function keyText(t) {
+    return norm(String(t || '').toUpperCase().replace(/^(PREL|K\*|PAY\*|SQ \*|SUMUP \*|ZETTLE_\*|IZ \*|WWW\.)\s*/g, '').replace(/[0-9]+/g, ' ').replace(/[^A-ZÅÄÖÉÜ&\. ]+/g, ' '));
+  }
+  // Förslag på nyckel: hela texten om den är kort, annars utan sista ordet (ofta ort eller butiksnummer)
+  function suggestKey(t) {
+    const w = keyText(t).split(' ').filter(Boolean);
+    if (!w.length) return norm(t).toUpperCase();
+    return (w.length >= 3 ? w.slice(0, -1) : w).join(' ');
+  }
+  const ALNUM = /[A-ZÅÄÖÉÜ0-9]/;
+  function wordStartIncludes(hay, needle) {
+    let i = hay.indexOf(needle);
+    while (i >= 0) { if (i === 0 || !ALNUM.test(hay[i - 1])) return true; i = hay.indexOf(needle, i + 1); }
+    return false;
+  }
+  function ruleMatches(rule, text) {
+    if (rule.r) { try { return new RegExp(rule.r, 'i').test(text); } catch (e) { return false; } }
+    if (rule.exakt) return norm(text).toLowerCase() === norm(rule.exakt).toLowerCase();
+    if (rule.nyckel) { const k = keyText(text), n = keyText(rule.nyckel); return !!n && (k === n || k.startsWith(n + ' ')); }
+    return wordStartIncludes(text.toUpperCase(), String(rule.s).toUpperCase());
+  }
+
+  // Heuristiker när ingen regel träffar
+  function heuristic(text) {
+    const t = norm(text);
+    if (/^(?=.*[a-z])(?=.*[A-Z])[A-Za-z0-9]{10,12}$/.test(t)) return 'spel';
+    if (/^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{12}$/.test(t)) return 'spel';
+    if (/^[A-ZÅÄÖÉ][a-zåäöé]+( [A-ZÅÄÖÉ][a-zåäöé]+){1,2}$/.test(t)) return 'swish';
+    if (/^[A-ZÅÄÖÉ\- ]+, ?[A-ZÅÄÖÉ]+$/.test(t)) return 'swish';
+    return 'okant';
+  }
+
+  function classify(text, userRules) {
+    for (const r of userRules) if (ruleMatches(r, text)) return { c: r.c, kalla: 'din regel' };
+    for (const r of SEED_RULES) if (ruleMatches(r, text)) return { c: r.c, kalla: r.betalsatt ? 'betalsätt' : 'regel' };
+    const h = heuristic(text);
+    return { c: h, kalla: h === 'okant' ? 'okänt' : 'gissning' };
+  }
+
+  // ---------- Läsa xlsx utan bibliotek ----------
+  async function inflateRaw(bytes) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('Webbläsaren kan inte packa upp xlsx. Uppdatera iOS eller webbläsaren.');
+    const ds = new DecompressionStream('deflate-raw');
+    const out = new Response(new Blob([bytes]).stream().pipeThrough(ds));
+    return new Uint8Array(await out.arrayBuffer());
+  }
+
+  async function unzip(buf, wanted) {
+    const u8 = new Uint8Array(buf);
+    const dv = new DataView(buf);
+    let eocd = -1;
+    for (let i = u8.length - 22; i >= Math.max(0, u8.length - 70000); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('Filen är inte en giltig xlsx-fil.');
+    const count = dv.getUint16(eocd + 10, true);
+    let p = dv.getUint32(eocd + 16, true);
+    const files = {};
+    const dec = new TextDecoder();
+    for (let n = 0; n < count; n++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const method = dv.getUint16(p + 10, true);
+      const csize = dv.getUint32(p + 20, true);
+      const nlen = dv.getUint16(p + 28, true);
+      const elen = dv.getUint16(p + 30, true);
+      const clen = dv.getUint16(p + 32, true);
+      const off = dv.getUint32(p + 42, true);
+      const name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+      p += 46 + nlen + elen + clen;
+      if (!wanted(name)) continue;
+      const usize = dv.getUint32(p - (46 + nlen + elen + clen) + 24, true);
+      if (method !== 0 && method !== 8) throw new Error('Filen använder en komprimering som inte stöds.');
+      if (csize > 30e6 || usize > 80e6) throw new Error('Filen är för stor.');
+      const ln = dv.getUint16(off + 26, true), le = dv.getUint16(off + 28, true);
+      const start = off + 30 + ln + le;
+      const data = u8.subarray(start, start + csize);
+      const raw = method === 0 ? data : await inflateRaw(data);
+      files[name] = dec.decode(raw);
+    }
+    return files;
+  }
+
+  function xmlText(s) {
+    return s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+      .replace(/&#(\d+);/g, (m, d) => String.fromCodePoint(+d)).replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCodePoint(parseInt(h, 16)))
+      .replace(/&amp;/g, '&');
+  }
+
+  function colIndex(ref) {
+    const m = /^([A-Z]+)/.exec(ref); let n = 0;
+    for (const ch of m[1]) n = n * 26 + (ch.charCodeAt(0) - 64);
+    return n - 1;
+  }
+
+  async function readXlsx(buf) {
+    if (buf.byteLength > 20e6) throw new Error('Filen är för stor.');
+    const files = await unzip(buf, (n) => n === 'xl/sharedStrings.xml' || /^xl\/worksheets\/sheet\d+\.xml$/.test(n) || n === 'xl/workbook.xml' || n === 'xl/_rels/workbook.xml.rels');
+    const shared = [];
+    if (files['xl/sharedStrings.xml']) {
+      const re = /<si>([\s\S]*?)<\/si>/g; let m;
+      while ((m = re.exec(files['xl/sharedStrings.xml']))) {
+        const parts = []; const rt = /<t[^>]*>([\s\S]*?)<\/t>/g; let t;
+        while ((t = rt.exec(m[1]))) parts.push(xmlText(t[1]));
+        shared.push(parts.join(''));
+      }
+    }
+    let sheetPath = null;
+    const wb = files['xl/workbook.xml'], rels = files['xl/_rels/workbook.xml.rels'];
+    if (wb && rels) {
+      const sm = /<sheet\b[^>]*r:id="([^"]+)"/.exec(wb);
+      if (sm) {
+        const rm = new RegExp('<Relationship\\b[^>]*Id="' + sm[1] + '"[^>]*Target="([^"]+)"').exec(rels) || new RegExp('<Relationship\\b[^>]*Target="([^"]+)"[^>]*Id="' + sm[1] + '"').exec(rels);
+        if (rm) sheetPath = rm[1].replace(/^\/?(xl\/)?/, 'xl/');
+      }
+    }
+    if (!sheetPath || !files[sheetPath]) sheetPath = Object.keys(files).filter((n) => n.startsWith('xl/worksheets/')).sort()[0];
+    if (!sheetPath) throw new Error('Hittade inget kalkylblad i filen.');
+    const xml = files[sheetPath];
+    const rows = [];
+    const rowRe = /<row\b[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g; let rm2;
+    let rowNo = -1;
+    while ((rm2 = rowRe.exec(xml))) {
+      const rattr = /\br="(\d+)"/.exec(rm2[0]);
+      rowNo = rattr ? +rattr[1] - 1 : rowNo + 1;
+      if (rowNo > 50000) throw new Error('Filen har för många rader.');
+      const cells = [];
+      const body = rm2[1] || '';
+      const cRe = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g; let cm; let ci = -1;
+      while ((cm = cRe.exec(body))) {
+        const attrs = cm[1]; const inner = cm[2] || '';
+        const r = /\br="([A-Z]+\d+)"/.exec(attrs);
+        ci = r ? colIndex(r[1]) : ci + 1;
+        if (ci > 50) continue;
+        const t = (/\bt="([^"]+)"/.exec(attrs) || [])[1] || 'n';
+        const v = /<v>([\s\S]*?)<\/v>/.exec(inner);
+        let val = null;
+        if (t === 's' && v) val = shared[+v[1]];
+        else if (t === 'inlineStr') { const parts = []; const rt = /<t[^>]*>([\s\S]*?)<\/t>/g; let x; while ((x = rt.exec(inner))) parts.push(xmlText(x[1])); val = parts.join(''); }
+        else if ((t === 'str' || t === 'e') && v) val = xmlText(v[1]);
+        else if (t === 'b' && v) val = v[1] === '1';
+        else if (v) val = Number(v[1]);
+        cells[ci] = val;
+      }
+      rows[rowNo] = cells;
+    }
+    for (let i = 0; i < rows.length; i++) if (!rows[i]) rows[i] = [];
+    return rows;
+  }
+
+  function readCsv(text) {
+    const sep = (text.split('\n')[0].match(/;/g) || []).length > (text.split('\n')[0].match(/,/g) || []).length ? ';' : ',';
+    return text.split(/\r?\n/).map((line) => {
+      const out = []; let cur = '', q = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (q) { if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; } else if (ch === '"') q = false; else cur += ch; }
+        else if (ch === '"') q = true; else if (ch === sep) { out.push(cur); cur = ''; } else cur += ch;
+      }
+      out.push(cur); return out;
+    });
+  }
+
+  // ---------- Tolka Handelsbankens export ----------
+  function toDate(v) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') {
+      const d = new Date(Math.round((v - 25569) * 86400000));
+      return d.toISOString().slice(0, 10);
+    }
+    const m = /(\d{4})-(\d{2})-(\d{2})/.exec(String(v));
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
+  }
+  function toNum(v) {
+    if (typeof v === 'number') return v;
+    if (v == null) return NaN;
+    const s = String(v).replace(/\s|\u00a0/g, '').replace(/−/g, '-');
+    return Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s);
+  }
+
+  function parseBankRows(rows) {
+    const cellStr = (c) => (c == null ? '' : String(c).trim());
+    let h = -1;
+    for (let i = 0; i < Math.min(rows.length, 40); i++) {
+      const r = rows[i].map(cellStr);
+      if (r.includes('Betalningsdatum') && r.includes('Mottagare')) return { typ: 'utforda' };
+      if (r.includes('Transaktionsdatum') && r.includes('Belopp')) { h = i; break; }
+    }
+    if (h < 0) return { typ: 'okand' };
+    const head = rows[h].map(cellStr);
+    const iRes = head.indexOf('Reskontradatum'), iTr = head.indexOf('Transaktionsdatum'), iTxt = head.indexOf('Text'), iBel = head.indexOf('Belopp'), iSal = head.indexOf('Saldo');
+    if (iTr < 0 || iTxt < 0 || iBel < 0) return { typ: 'okand' };
+    let konto = '';
+    for (let i = 0; i < h; i++) {
+      const c = cellStr(rows[i][0]);
+      if (!c || /^handelsbanken$/i.test(c) || /^\d{4}-\d{2}-\d{2}/.test(c) || /^(Kontoform|Period|Transaktionstyp)/i.test(c)) continue;
+      // Kontonummer i slutet av namnet tas bort, så att samma konto får samma namn i alla exporter och inget kontonummer sparas
+      konto = c.replace(/\s*\d[\d\s-]{4,}\d\s*$/, '').trim() || c; break;
+    }
+    const tx = []; let prel = 0, fel = 0;
+    for (let i = h + 1; i < rows.length; i++) {
+      const r = rows[i]; if (!r || !r.length) continue;
+      const text = norm(r[iTxt]);
+      const belopp = toNum(r[iBel]);
+      if (!text && isNaN(belopp)) continue;
+      const res = iRes >= 0 ? toDate(r[iRes]) : null;
+      if (iRes >= 0 && !res) { prel++; continue; }
+      const datum = toDate(r[iTr]) || res;
+      if (!datum || !Number.isFinite(belopp) || isNaN(Date.parse(datum))) { fel++; continue; }
+      const saldo = iSal >= 0 ? toNum(r[iSal]) : NaN;
+      tx.push({ datum, text, belopp: Math.round(belopp * 100) / 100, saldo: isNaN(saldo) ? null : Math.round(saldo * 100) / 100 });
+    }
+    return { typ: 'konto', konto: konto || 'Okänt konto', tx, prel, fel, rader: tx.length + prel + fel };
+  }
+
+  function txId(konto, t) { return [konto, t.datum, t.text, t.belopp, t.saldo].join('|'); }
+
+  // ---------- Bearbeta alla transaktioner ----------
+  function dayDiff(a, b) { return Math.abs((Date.parse(a) - Date.parse(b)) / 86400000); }
+
+  function process(state) {
+    const all = Object.values(state.tx).map((t) => ({ ...t }));
+    const acc = state.konton || {};
+    const namn = ((state.settings || {}).egetNamn || '').trim().toLowerCase();
+    all.forEach((t) => {
+      const o = state.overrides[t.id];
+      const k = classify(t.text, state.regler || []);
+      // Förnamn: bara ett förslag om överföring, granskas i Sortera om det inte paras
+      if (namn && k.kalla !== 'din regel' && (k.c === 'swish' || k.c === 'okant') && t.text.toLowerCase().startsWith(namn + ' ')) { k.c = 'sparande'; k.kalla = 'gissning'; }
+      t.auto = k.c; t.kalla = k.kalla;
+      t.kat = o || k.c;
+      t.manuell = !!o;
+      t.kontotyp = (acc[t.konto] && acc[t.konto].typ) || 'mitt';
+    });
+    // Para ihop överföringar mellan egna konton.
+    // Signal: någon sida är klassad som överföring (regel, förslag eller manuellt sparande/intern),
+    // eller båda har samma text och ingen av dem är en känd butik.
+    const transferish = (t) => t.kat === 'sparande' || t.kat === 'intern' || (!t.manuell && t.auto === 'sparande');
+    const unknownText = (t) => !t.manuell && t.auto === 'okant' && t.kalla === 'okänt';
+    const eligible = (t) => !t.manuell || t.kat === 'sparande' || t.kat === 'intern';
+    const cents = (v) => Math.round(Math.abs(v) * 100);
+    const byAmount = new Map();
+    all.filter((t) => t.belopp > 0 && eligible(t)).forEach((p) => { const k = cents(p.belopp); if (!byAmount.has(k)) byAmount.set(k, []); byAmount.get(k).push(p); });
+    const neg = all.filter((t) => t.belopp < 0 && eligible(t)).sort((a, b) => a.datum.localeCompare(b.datum));
+    const used = new Set();
+    for (const n of neg) {
+      const list = byAmount.get(cents(n.belopp)); if (!list) continue;
+      let best = null, bestD = 99;
+      for (const p of list) {
+        if (used.has(p.id) || p.konto === n.konto) continue;
+        const dd = dayDiff(p.datum, n.datum); if (dd > 2) continue;
+        const sameUnknown = unknownText(p) && unknownText(n) && norm(p.text).toLowerCase() === norm(n.text).toLowerCase();
+        if (!(transferish(p) || transferish(n) || sameUnknown)) continue;
+        if (dd < bestD) { best = p; bestD = dd; }
+      }
+      if (best) {
+        used.add(best.id); n.par = best.id; best.par = n.id;
+        const gN = n.kontotyp === 'gemensamt', gP = best.kontotyp === 'gemensamt';
+        if (gN !== gP) {
+          // Ena sidan är det gemensamma kontot: din sida är en kostnad (eller återföring), gemensamma sidan en insättning från dig
+          (gN ? best : n).kat = 'gemensamt'; (gN ? n : best).kat = 'fran_mig';
+        } else { n.kat = 'intern'; best.kat = 'intern'; }
+      }
+    }
+    // Ej parade insättningar på gemensamt konto som ser ut som överföringar antas vara sambons
+    all.forEach((t) => {
+      if (!t.manuell && t.kat === 'sparande' && t.belopp > 0 && t.kontotyp === 'gemensamt') { t.kat = 'sambo'; }
+    });
+    return all;
+  }
+
+  // ---------- Perioder ----------
+  function addDays(d, n) { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); }
+  function ymOf(d) { return d.slice(0, 7); }
+  function nextYm(ym) { let [y, m] = ym.split('-').map(Number); m++; if (m > 12) { m = 1; y++; } return `${y}-${String(m).padStart(2, '0')}`; }
+  // Periodens id: månaden där perioden till största delen ligger (start plus 14 dagar). Stabilt även om startdagen flyttas några dagar.
+  function periodId(start) { return ymOf(addDays(start, 14)); }
+  function periods(all, settings) {
+    const min = settings.minLon || 10000, startdag = Math.min(28, Math.max(1, settings.startdag || 25));
+    if (!all.length) return [];
+    // Löner: slå ihop insättningar inom 10 dagar innan minimibeloppet kontrolleras
+    const lonTx = all.filter((t) => t.kat === 'lon' && t.belopp > 0 && t.kontotyp !== 'gemensamt').sort((a, b) => a.datum.localeCompare(b.datum));
+    const groups = [];
+    lonTx.forEach((t) => { const g = groups[groups.length - 1]; if (g && dayDiff(t.datum, g.start) <= 10) g.sum += t.belopp; else groups.push({ start: t.datum, sum: t.belopp }); });
+    const salary = groups.filter((g) => g.sum >= min).map((g) => g.start);
+    // Reservgränser varje månad på startdagen, där ingen lön finns inom 20 dagar
+    const dates = all.map((t) => t.datum).sort();
+    const first = dates[0], last = dates[dates.length - 1] > new Date().toISOString().slice(0, 10) ? dates[dates.length - 1] : new Date().toISOString().slice(0, 10);
+    let ym = ymOf(addDays(first, -31));
+    const fb = [];
+    while (ym <= ymOf(last)) { fb.push(`${ym}-${String(startdag).padStart(2, '0')}`); ym = nextYm(ym); }
+    const bounds = [...salary.map((d) => ({ d, lon: true })), ...fb.filter((f) => !salary.some((s) => dayDiff(s, f) <= 20)).map((d) => ({ d, lon: false }))]
+      .sort((a, b) => a.d.localeCompare(b.d));
+    const keyIdx = (datum) => { let i = -1; for (let j = 0; j < bounds.length; j++) { if (bounds[j].d <= datum) i = j; else break; } return i; };
+    const used = new Map();
+    all.forEach((t) => { const i = keyIdx(t.datum); t._b = i; used.set(i, true); });
+    const idx = [...used.keys()].filter((i) => i >= 0).sort((a, b) => a - b);
+    const out = []; const seenId = new Set();
+    idx.forEach((i) => {
+      const b = bounds[i]; let id = periodId(b.d);
+      if (seenId.has(id)) id = id + 'b'; seenId.add(id);
+      const nxt = bounds[i + 1];
+      out.push({ key: id, start: b.d, slut: nxt ? addDays(nxt.d, -1) : null, lon: b.lon, _i: i });
+    });
+    const map = new Map(out.map((p) => [p._i, p.key]));
+    all.forEach((t) => { t.period = map.get(t._b); delete t._b; });
+    out.forEach((p) => delete p._i);
+    return out;
+  }
+
+  // ---------- Summeringar ----------
+  // Två separata vyer: 'mitt' = dina egna konton, 'gemensamt' = bara det gemensamma kontot. Ingen procent.
+  function inScope(t, scope) { return scope === 'gemensamt' ? t.kontotyp === 'gemensamt' : t.kontotyp !== 'gemensamt'; }
+  function summarize(all, periodKey, scope) {
+    return summarizeTx(all.filter((t) => t.period === periodKey), scope);
+  }
+  function summarizeTx(list, scope) {
+    const sums = {}; CATS.forEach((c) => { sums[c.id] = 0; });
+    list.forEach((t) => { if (inScope(t, scope || 'mitt')) sums[t.kat] = (sums[t.kat] || 0) + t.belopp; });
+    let inn = 0, ut = 0;
+    CATS.forEach((c) => {
+      if (c.typ === 'in') inn += sums[c.id];
+      if (c.typ === 'ut') ut += -sums[c.id];
+    });
+    return { sums, inn, ut, kvar: inn - ut };
+  }
+
+  G.Kassabok = { inScope, periodId, CATS, CAT, GRUPPER, SEED_RULES, classify, keyText, suggestKey, summarizeTx, readXlsx, readCsv, parseBankRows, txId, process, periods, summarize, norm, addDays };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Minimal xlsx-skrivare med formatering: flera blad, sammanfogade celler, formler, okomprimerad zip. */
+(function (G) {
+  'use strict';
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function zip(files) {
+    const enc = new TextEncoder(); const parts = []; const central = []; let off = 0;
+    files.forEach(([name, text]) => {
+      const nb = enc.encode(name), data = enc.encode(text), crc = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, nb.length, true);
+      parts.push(new Uint8Array(lh.buffer), nb, data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+      ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, nb.length, true); ch.setUint32(42, off, true);
+      central.push(new Uint8Array(ch.buffer), nb);
+      off += 30 + nb.length + data.length;
+    });
+    const csize = central.reduce((s, p) => s + p.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, csize, true); end.setUint32(16, off, true);
+    const all = [...parts, ...central, new Uint8Array(end.buffer)];
+    const out = new Uint8Array(all.reduce((s, p) => s + p.length, 0)); let p = 0; all.forEach((a) => { out.set(a, p); p += a.length; });
+    return out;
+  }
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  function colName(i) { let s = ''; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+  function serial(iso) { return Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000 + 25569; }
+
+  const S = { n: 0, date: 1, kr: 2, head: 3, headR: 4, title: 5, sub: 6, b: 7, krTot: 8, bTot: 9, krRed: 10, krGreen: 11, grp: 12, grpKr: 13, pct: 14, note: 15, belopp: 16, krBig: 17, lbl: 18, zebra: 19, zebraKr: 20, zebraDate: 21, zebraBelopp: 22 };
+  const PINE = 'FF1D5A43', SOFT = 'FFE6EFE9', ZEBRA = 'FFF5F8F6', LINE = 'FFC8D4CC', GREY = 'FF5B6B62', RED = 'FFB0382A';
+  const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="4"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/><numFmt numFmtId="165" formatCode="#,##0 &quot;kr&quot;"/><numFmt numFmtId="166" formatCode="0%"/><numFmt numFmtId="167" formatCode="#,##0.00"/></numFmts>
+<fonts count="9">
+<font><sz val="11"/><name val="Arial"/></font>
+<font><b/><sz val="11"/><name val="Arial"/></font>
+<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>
+<font><b/><sz val="18"/><color rgb="${PINE}"/><name val="Arial"/></font>
+<font><sz val="10"/><color rgb="${GREY}"/><name val="Arial"/></font>
+<font><b/><sz val="11"/><color rgb="${RED}"/><name val="Arial"/></font>
+<font><sz val="11"/><color rgb="${PINE}"/><name val="Arial"/></font>
+<font><sz val="11"/><color rgb="${RED}"/><name val="Arial"/></font>
+<font><b/><sz val="14"/><name val="Arial"/></font>
+</fonts>
+<fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="${PINE}"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="${SOFT}"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="${ZEBRA}"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="3"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top/><bottom style="thin"><color rgb="${LINE}"/></bottom><diagonal/></border><border><left/><right/><top style="medium"><color rgb="${PINE}"/></top><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="23">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/>
+<xf numFmtId="165" fontId="1" fillId="0" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1"/>
+<xf numFmtId="165" fontId="7" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1"/>
+<xf numFmtId="165" fontId="6" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="1" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+<xf numFmtId="165" fontId="1" fillId="3" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/>
+<xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf>
+<xf numFmtId="167" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="165" fontId="8" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="0" fillId="4" borderId="0" xfId="0" applyFill="1"/>
+<xf numFmtId="165" fontId="0" fillId="4" borderId="0" xfId="0" applyNumberFormat="1" applyFill="1"/>
+<xf numFmtId="164" fontId="0" fillId="4" borderId="0" xfId="0" applyNumberFormat="1" applyFill="1"/>
+<xf numFmtId="167" fontId="0" fillId="4" borderId="0" xfId="0" applyNumberFormat="1" applyFill="1"/>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+  // cell: null | sträng | tal | {v, s, f, date:true}
+  function cellXml(ref, c) {
+    if (c == null || c === '') return '';
+    if (typeof c !== 'object') c = { v: c };
+    const s = c.s != null ? ` s="${S[c.s] != null ? S[c.s] : c.s}"` : '';
+    if (c.f) {
+      const v = typeof c.v === 'number' && isFinite(c.v) ? `<v>${+c.v.toPrecision(12)}</v>` : '';
+      return `<c r="${ref}"${s}><f>${esc(c.f)}</f>${v}</c>`;
+    }
+    if (c.date) return `<c r="${ref}"${s}><v>${serial(c.v)}</v></c>`;
+    if (typeof c.v === 'number') return `<c r="${ref}"${s}><v>${+c.v.toPrecision(12)}</v></c>`;
+    if (c.v == null || c.v === '') return s ? `<c r="${ref}"${s}/>` : '';
+    return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${esc(c.v)}</t></is></c>`;
+  }
+  function sheetXml(sh) {
+    const cw = (sh.cols || []).map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('');
+    const rows = sh.rows.map((r, ri) => {
+      const h = sh.heights && sh.heights[ri] ? ` ht="${sh.heights[ri]}" customHeight="1"` : '';
+      return `<row r="${ri + 1}"${h}>` + (r || []).map((c, ci) => cellXml(colName(ci) + (ri + 1), c)).join('') + '</row>';
+    }).join('');
+    const pane = sh.freeze ? `<pane ySplit="${sh.freeze}" topLeftCell="A${sh.freeze + 1}" activePane="bottomLeft" state="frozen"/>` : '';
+    const merges = sh.merges && sh.merges.length ? `<mergeCells count="${sh.merges.length}">${sh.merges.map((m) => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : '';
+    const filter = sh.filter ? `<autoFilter ref="${sh.filter}"/>` : '';
+    const setup = `<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="${sh.landscape ? 'landscape' : 'portrait'}" fitToWidth="1" fitToHeight="0"/>`;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" showGridLines="${sh.grid ? 1 : 0}">${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="18"/>${cw ? `<cols>${cw}</cols>` : ''}<sheetData>${rows}</sheetData>${filter}${merges}${setup}</worksheet>`;
+  }
+  function build(sheets) {
+    const files = [];
+    files.push(['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' + sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') + '</Types>']);
+    files.push(['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>']);
+    const defs = sheets.map((s, i) => s.filter ? `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${esc(s.name)}'!${s.filter.split(':').map((r) => r.replace(/^([A-Z]+)(\d+)$/, '$$$1$$$2')).join(':')}</definedName>` : '').join('');
+    files.push(['xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' + sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets>' + (defs ? `<definedNames>${defs}</definedNames>` : '') + '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>']);
+    files.push(['xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('') + `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`]);
+    files.push(['xl/styles.xml', STYLES]);
+    sheets.forEach((s, i) => files.push([`xl/worksheets/sheet${i + 1}.xml`, sheetXml(s)]));
+    return zip(files);
+  }
+  G.XlsxW = { build, colName };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Minimal PDF-skrivare för budgetrapporten. Helvetica, WinAnsi, A4. */
+(function (G) {
+  'use strict';
+  const W = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+  const EXTRA = { 'å': 556, 'ä': 556, 'ö': 556, 'Å': 667, 'Ä': 667, 'Ö': 778, 'é': 556, 'É': 667, 'ü': 556, 'Ü': 722, '”': 333, '“': 333, '’': 222, '–': 556, '—': 1000, '…': 1000, '×': 584, '\u00a0': 278, '€': 556 };
+  const MAP = { '€': 0x80, '”': 0x94, '“': 0x93, '’': 0x92, '‘': 0x91, '–': 0x96, '—': 0x97, '…': 0x85, '−': 0x2D, '\u00a0': 0x20, '\u202f': 0x20 };
+  function charW(ch, bold) {
+    const c = ch.charCodeAt(0);
+    let w = c >= 32 && c <= 126 ? W[c - 32] : (EXTRA[ch] || 556);
+    return bold ? w * 1.06 : w;
+  }
+  function textW(s, size, bold) { let w = 0; for (const ch of String(s)) w += charW(ch, bold); return (w * size) / 1000; }
+  function enc(s) {
+    let out = '';
+    for (const ch of String(s)) {
+      let c = MAP[ch] != null ? MAP[ch] : ch.charCodeAt(0);
+      if (c > 255) c = 63;
+      const x = String.fromCharCode(c);
+      out += x === '(' || x === ')' || x === '\\' ? '\\' + x : x;
+    }
+    return out;
+  }
+  function fit(s, size, bold, maxW) {
+    s = String(s);
+    if (textW(s, size, bold) <= maxW) return s;
+    while (s.length > 1 && textW(s + '…', size, bold) > maxW) s = s.slice(0, -1);
+    return s + '…';
+  }
+  const rgb = (h) => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255].map((v) => v.toFixed(3)).join(' ');
+
+  function Doc() {
+    const pages = []; let cur = null;
+    const d = {
+      W: 595.28, H: 841.89,
+      page() { cur = []; pages.push(cur); return d; },
+      rect(x, y, w, h, fill) { cur.push(`${rgb(fill)} rg ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`); return d; },
+      line(x1, y1, x2, y2, color, width) { cur.push(`${rgb(color)} RG ${width || 0.5} w ${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S`); return d; },
+      text(x, y, s, o) {
+        o = o || {}; const size = o.size || 10, bold = !!o.bold;
+        let str = o.maxW ? fit(s, size, bold, o.maxW) : String(s);
+        let xx = x;
+        if (o.align === 'right') xx = x - textW(str, size, bold);
+        if (o.align === 'center') xx = x - textW(str, size, bold) / 2;
+        cur.push(`BT /${bold ? 'F2' : 'F1'} ${size} Tf ${rgb(o.color || '#15201A')} rg ${xx.toFixed(2)} ${y.toFixed(2)} Td (${enc(str)}) Tj ET`);
+        return d;
+      },
+      build() {
+        const objs = [];
+        const add = (s) => { objs.push(s); return objs.length; };
+        const catalog = add(null), pagesObj = add(null);
+        const f1 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+        const f2 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+        const kids = [];
+        pages.forEach((ops) => {
+          const body = ops.join('\n');
+          const cs = add(`<< /Length ${body.length} >>\nstream\n${body}\nendstream`);
+          kids.push(add(`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${d.W} ${d.H}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${cs} 0 R >>`));
+        });
+        objs[catalog - 1] = `<< /Type /Catalog /Pages ${pagesObj} 0 R >>`;
+        objs[pagesObj - 1] = `<< /Type /Pages /Kids [${kids.map((k) => k + ' 0 R').join(' ')}] /Count ${kids.length} >>`;
+        let out = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'; const offs = [];
+        objs.forEach((o, i) => { offs.push(out.length); out += `${i + 1} 0 obj\n${o}\nendobj\n`; });
+        const xref = out.length;
+        out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + offs.map((o) => String(o).padStart(10, '0') + ' 00000 n \n').join('');
+        out += `trailer\n<< /Size ${objs.length + 1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+        const u8 = new Uint8Array(out.length);
+        for (let i = 0; i < out.length; i++) u8[i] = out.charCodeAt(i) & 0xFF;
+        return u8;
+      },
+    };
+    return d;
+  }
+
+  const C = { pine: '#1D5A43', soft: '#E6EFE9', zebra: '#F5F8F6', line: '#C8D4CC', grey: '#5B6B62', red: '#B0382A', ink: '#15201A', white: '#FFFFFF' };
+  const nf = (n) => { const r = Math.round(n || 0) || 0; const s = Math.abs(r).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); return (r < 0 ? '-' : '') + s; };
+  const kr = (n) => nf(n) + ' kr';
+
+  // m: {titel, period, omfang, skapad, kort:[{label,value,tone}], grupper:[{namn, rader:[{namn,budget,utfall}]}], inkomst, top:[{datum,text,belopp}], noter:[]}
+  function wrap(s, size, maxW) {
+    const words = String(s).split(' '); const lines = []; let cur = '';
+    words.forEach((w) => { const t = cur ? cur + ' ' + w : w; if (textW(t, size) > maxW && cur) { lines.push(cur); cur = w; } else cur = t; });
+    if (cur) lines.push(cur); return lines;
+  }
+  function report(m) {
+    const d = Doc(); const L = 40, R = d.W - 40; let y;
+    let pageNo = 0;
+    function newPage(first) {
+      d.page(); pageNo++;
+      if (first) {
+        d.rect(0, d.H - 96, d.W, 96, C.pine);
+        d.text(L, d.H - 50, m.titel, { size: 24, bold: true, color: C.white });
+        d.text(L, d.H - 72, m.period, { size: 11, color: C.white });
+        d.text(R, d.H - 50, m.omfang, { size: 10, bold: true, color: C.white, align: 'right', maxW: 200 });
+        d.text(R, d.H - 66, 'Skapad ' + m.skapad, { size: 9, color: C.white, align: 'right' });
+        y = d.H - 120;
+      } else {
+        d.text(L, d.H - 40, m.titel + ', ' + m.period, { size: 9, color: C.grey });
+        y = d.H - 64;
+      }
+      d.text(d.W / 2, 24, 'Sida ' + pageNo, { size: 8, color: C.grey, align: 'center' });
+    }
+    function need(h) { if (y - h < 50) newPage(false); }
+    newPage(true);
+
+    // Nyckeltal
+    const n = m.kort.length, gap = 8, bw = (R - L - gap * (n - 1)) / n, bh = 56;
+    m.kort.forEach((k, i) => {
+      const x = L + i * (bw + gap);
+      d.rect(x, y - bh, bw, bh, C.soft);
+      d.text(x + 10, y - 18, k.label, { size: 8.5, color: C.grey, maxW: bw - 20 });
+      d.text(x + 10, y - 40, k.value, { size: 15, bold: true, color: k.tone === 'bad' ? C.red : (k.tone === 'good' ? C.pine : C.ink), maxW: bw - 20 });
+    });
+    y -= bh + 22;
+
+    // Budgettabell
+    const cB = 395, cU = 470, cK = R - 6;
+    function head(cols) {
+      need(24);
+      d.rect(L, y - 18, R - L, 20, C.pine);
+      d.text(L + 6, y - 12, cols[0], { size: 9, bold: true, color: C.white });
+      d.text(cB, y - 12, cols[1], { size: 9, bold: true, color: C.white, align: 'right' });
+      d.text(cU, y - 12, cols[2], { size: 9, bold: true, color: C.white, align: 'right' });
+      d.text(cK, y - 12, cols[3], { size: 9, bold: true, color: C.white, align: 'right' });
+      y -= 22;
+    }
+    d.text(L, y, 'Budget mot utfall', { size: 13, bold: true }); y -= 10;
+    head(['Kategori', 'Budget', 'Utfall', 'Kvar']);
+    let tB = 0, tU = 0;
+    m.grupper.forEach((g) => {
+      if (!g.rader.length) return;
+      need(40);
+      const gb = g.rader.reduce((s, r) => s + r.budget, 0), gu = g.rader.reduce((s, r) => s + r.utfall, 0);
+      d.rect(L, y - 16, R - L, 18, C.soft);
+      d.text(L + 6, y - 11, g.namn, { size: 9.5, bold: true });
+      d.text(cB, y - 11, nf(gb), { size: 9.5, bold: true, align: 'right' });
+      d.text(cU, y - 11, nf(gu), { size: 9.5, bold: true, align: 'right' });
+      d.text(cK, y - 11, nf(gb - gu), { size: 9.5, bold: true, align: 'right', color: gb - gu < 0 ? C.red : C.ink });
+      y -= 19;
+      g.rader.forEach((r) => {
+        need(18);
+        const kvar = r.budget - r.utfall;
+        d.text(L + 14, y - 10, r.namn, { size: 9.5, maxW: cB - L - 90 });
+        d.text(cB, y - 10, nf(r.budget), { size: 9.5, align: 'right', color: C.grey });
+        d.text(cU, y - 10, nf(r.utfall), { size: 9.5, align: 'right' });
+        d.text(cK, y - 10, nf(kvar), { size: 9.5, align: 'right', color: kvar < 0 ? C.red : C.ink });
+        d.line(L, y - 13, R, y - 13, C.line, 0.4);
+        y -= 15;
+      });
+      tB += gb; tU += gu;
+    });
+    need(24);
+    d.line(L, y - 2, R, y - 2, C.pine, 1.2);
+    d.text(L + 6, y - 15, 'Summa', { size: 10, bold: true });
+    d.text(cB, y - 15, nf(tB), { size: 10, bold: true, align: 'right' });
+    d.text(cU, y - 15, nf(tU), { size: 10, bold: true, align: 'right' });
+    d.text(cK, y - 15, nf(tB - tU), { size: 10, bold: true, align: 'right', color: tB - tU < 0 ? C.red : C.ink });
+    y -= 34;
+
+    // Inkomst och plus
+    need(84);
+    const rows = [['Inkomst', m.inkomst], ['Utgifter', -tU], ['Plus eller minus', m.inkomst - tU]];
+    if (m.planerad != null) rows.push(['Kvar att spara enligt budget (planerad inkomst ' + kr(m.planerad) + ' minus budget)', m.planerad - (m.budget != null ? m.budget : tB)]);
+    rows.forEach((r, i) => {
+      d.text(L + 6, y - 10, r[0], { size: 10, bold: i === 2, maxW: cK - L - 90 });
+      d.text(cK, y - 10, kr(r[1]), { size: 10, bold: i === 2, align: 'right', color: r[1] < 0 && i >= 2 ? C.red : (i === 2 ? C.pine : C.ink) });
+      if (i !== 2) d.line(L, y - 15, R, y - 15, C.line, 0.4);
+      y -= 18;
+    });
+    y -= 16;
+
+    // Största utgifter
+    if (m.top && m.top.length) {
+      need(60);
+      d.text(L, y, 'Största utgifterna i perioden', { size: 13, bold: true }); y -= 10;
+      need(24);
+      d.rect(L, y - 18, R - L, 20, C.pine);
+      d.text(L + 6, y - 12, 'Datum', { size: 9, bold: true, color: C.white });
+      d.text(L + 80, y - 12, 'Text', { size: 9, bold: true, color: C.white });
+      d.text(cU, y - 12, 'Kategori', { size: 9, bold: true, color: C.white, align: 'right' });
+      d.text(cK, y - 12, 'Belopp', { size: 9, bold: true, color: C.white, align: 'right' });
+      y -= 22;
+      m.top.forEach((t) => {
+        need(18);
+        d.text(L + 6, y - 10, t.datum, { size: 9, color: C.grey });
+        d.text(L + 80, y - 10, t.text, { size: 9, maxW: 200 });
+        d.text(cU, y - 10, t.kategori, { size: 9, align: 'right', color: C.grey, maxW: 150 });
+        d.text(cK, y - 10, nf(t.belopp), { size: 9, align: 'right' });
+        d.line(L, y - 13, R, y - 13, C.line, 0.4);
+        y -= 15;
+      });
+      y -= 14;
+    }
+    if (m.noter && m.noter.length) {
+      m.noter.forEach((t) => wrap(t, 8, R - L).forEach((line) => { need(14); d.text(L, y, line, { size: 8, color: C.grey }); y -= 11; }));
+    }
+    return d.build();
+  }
+  G.PdfW = { report, textW };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const K = window.Kassabok;
+  const KEY = 'kassabok.v1';
+  const $ = (id) => document.getElementById(id);
+  const fmt = new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 0 });
+  const r0 = (n) => Math.round(n || 0) || 0;
+  const nf = (n) => fmt.format(r0(n));
+  const kr = (n) => nf(n) + ' kr';
+  const MAN = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const dShort = (d) => { const [, m, dd] = d.split('-'); return `${+dd} ${MAN[+m - 1]}`; };
+  const dLong = (d) => { const [y, m, dd] = d.split('-'); return `${+dd} ${MAN[+m - 1]} ${y}`; };
+  const mLabel = (ym) => { const [y, m] = ym.split('-'); return `${MAN[+m - 1]} ${y}`; };
+  const today = () => new Date().toISOString().slice(0, 10);
+  const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
+  const UT = K.CATS.filter((c) => c.typ === 'ut');
+  const SAKER = ['regel', 'din regel', 'eget namn'];
+  const QUICK = ['mat', 'shopping', 'halsa', 'restaurang', 'swish', 'noje', 'bil', 'barn'];
+  const QUICK_IN = ['lon', 'ovrig_inkomst', 'swish', 'sparande', 'shopping', 'halsa'];
+
+  function defaults() {
+    return {
+      tx: {}, overrides: {}, regler: [], konton: {}, budgets: {}, scope: 'mitt', valdPeriod: null,
+      settings: { minLon: 10000, startdag: 25, egetNamn: '', bufNamn: 'Buffertkonto' },
+      ui: { sscope: 'period', ymode: 'lon', yscope: 'mitt', fordela: false }, buffert: [], alias: {}, imports: [], schema: 3,
+    };
+  }
+  const SCHEMA = 3;
+  // Validera och migrera sparad data. Kastar fel om datan inte går att använda.
+  function normalize(s) {
+    if (!s || typeof s !== 'object' || Array.isArray(s)) throw new Error('Ingen giltig data');
+    if (s.schema && s.schema > SCHEMA) throw new Error('Datan kommer från en nyare version av appen');
+    const d = defaults();
+    const out = Object.assign(defaults(), s);
+    if (!out.tx || typeof out.tx !== 'object' || Array.isArray(out.tx)) throw new Error('Transaktioner saknas');
+    const tx = {};
+    Object.values(out.tx).forEach((t) => {
+      if (!t || typeof t !== 'object') return;
+      if (typeof t.id !== 'string' || typeof t.konto !== 'string' || typeof t.text !== 'string') return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(t.datum || '') || !Number.isFinite(t.belopp)) return;
+      tx[t.id] = { id: t.id, konto: t.konto, datum: t.datum, text: t.text, belopp: t.belopp, saldo: Number.isFinite(t.saldo) ? t.saldo : null };
+    });
+    // Kontonummer i kontonamn tas bort, poster som då blir dubbletter slås ihop
+    const cleanK = (k) => String(k).replace(/\s*\d[\d\s-]{4,}\d\s*$/, '').trim() || k;
+    const remap = {};
+    Object.values(tx).forEach((t) => {
+      const k = cleanK(t.konto); if (k === t.konto) return;
+      const base = K.txId(k, t); let id = base, n = 1;
+      while (tx[id] && !(tx[id].datum === t.datum && tx[id].belopp === t.belopp && tx[id].text === t.text && tx[id].saldo === t.saldo)) { n++; id = `${base}#${n}`; }
+      if (!tx[id]) tx[id] = { ...t, id, konto: k };
+      remap[t.id] = id; delete tx[t.id];
+    });
+    if (out.overrides && typeof out.overrides === 'object') Object.entries(remap).forEach(([a, b]) => { if (out.overrides[a] && !out.overrides[b]) out.overrides[b] = out.overrides[a]; delete out.overrides[a]; });
+    if (out.konton && typeof out.konton === 'object') Object.keys(out.konton).forEach((k) => { const c = cleanK(k); if (c !== k) { if (!out.konton[c]) out.konton[c] = out.konton[k]; delete out.konton[k]; } });
+    if (out.alias && typeof out.alias === 'object') Object.keys(out.alias).forEach((k) => { if (cleanK(k) !== k) delete out.alias[k]; });
+    if (Array.isArray(out.imports)) out.imports.forEach((x) => { if (x && typeof x.konto === 'string') x.konto = cleanK(x.konto); });
+    out.tx = tx;
+    out.overrides = Object.fromEntries(Object.entries(out.overrides && typeof out.overrides === 'object' ? out.overrides : {}).filter(([k, v]) => tx[k] && K.CAT[v]));
+    out.regler = (Array.isArray(out.regler) ? out.regler : []).filter((r) => r && K.CAT[r.c] && (typeof r.nyckel === 'string' || typeof r.exakt === 'string')).map((r) => (r.nyckel ? { nyckel: r.nyckel.slice(0, 80), c: r.c } : { exakt: r.exakt.slice(0, 120), c: r.c }));
+    out.konton = out.konton && typeof out.konton === 'object' ? out.konton : {};
+    Object.keys(out.konton).forEach((k) => { if (!['mitt', 'gemensamt', 'spar'].includes((out.konton[k] || {}).typ)) out.konton[k] = { typ: 'mitt' }; });
+    out.alias = out.alias && typeof out.alias === 'object' ? out.alias : {};
+    out.imports = Array.isArray(out.imports) ? out.imports.filter((x) => x && typeof x.konto === 'string') : [];
+    out.buffert = (Array.isArray(out.buffert) ? out.buffert : []).filter((x) => x && /^\d{4}-\d{2}$/.test(x.man) && Number.isFinite(x.saldo));
+    out.settings = Object.assign(d.settings, out.settings && typeof out.settings === 'object' ? out.settings : {});
+    out.ui = Object.assign(d.ui, out.ui && typeof out.ui === 'object' ? out.ui : {});
+    // Budgetar: v1 sparade på periodens startdatum, v2 på periodens id (månad)
+    const bud = {};
+    Object.entries(out.budgets && typeof out.budgets === 'object' ? out.budgets : {}).forEach(([k, b]) => {
+      if (!b || typeof b !== 'object' || typeof b.cats !== 'object') return;
+      const id = /^\d{4}-\d{2}-\d{2}$/.test(k) ? K.periodId(k) : k;
+      if (bud[id]) return;
+      bud[id] = { inc: Number.isFinite(b.inc) ? b.inc : null, cats: Object.fromEntries(Object.entries(b.cats).filter(([c, v]) => K.CAT[c] && Number.isFinite(+v)).map(([c, v]) => [c, +v])), oneoffs: Array.isArray(b.oneoffs) ? b.oneoffs.filter((o) => o && typeof o === 'object').map((o) => ({ text: String(o.text || ''), belopp: +o.belopp || 0 })) : [], ursprung: typeof b.ursprung === 'string' ? b.ursprung : '' };
+    });
+    if (!s.schema || s.schema < 3) Object.values(bud).forEach((b) => { b.ursprung = 'Gjord med det gamla upplägget, där gemensamma kostnader räknades med din andel. Se över Gemensamt konto, Boende, Mat och Bil, eller tryck Fyll med rekommenderat.'; });
+    out.budgets = bud;
+    if (out.scope !== 'mitt') out.scope = 'mitt';
+    if (out.ui.yscope !== 'gemensamt') out.ui.yscope = 'mitt';
+    out.schema = SCHEMA;
+    return out;
+  }
+  let state = defaults();
+  let loadError = null, migrated = false;
+  let raw = null;
+  try {
+    raw = localStorage.getItem(KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (!parsed.schema || parsed.schema < SCHEMA) { migrated = true; try { localStorage.setItem(KEY + '.fore-v' + SCHEMA, raw); } catch (e) { /* plats saknas */ } }
+      const kontonFore = JSON.stringify(Object.keys(parsed.konton || {}).sort());
+      state = normalize(parsed);
+      if (JSON.stringify(Object.keys(state.konton).sort()) !== kontonFore) migrated = true;
+    }
+  } catch (e) { loadError = e.message; state = defaults(); try { if (raw) localStorage.setItem(KEY + '.trasig', raw); } catch (er) { /* plats saknas */ } }
+  let saveTimer = null, saveFailed = false;
+  function save() {
+    clearTimeout(saveTimer); saveTimer = null;
+    try { localStorage.setItem(KEY, JSON.stringify(state)); if (saveFailed) { saveFailed = false; showSaveError(false); } return true; }
+    catch (e) { saveFailed = true; showSaveError(true); return false; }
+  }
+  function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 500); }
+  window.addEventListener('pagehide', () => { if (saveTimer) save(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) save(); });
+  function showSaveError(on) {
+    const b = $('saveError'); if (!b) return; b.hidden = !on;
+  }
+
+  let all = [], pers = [], cur = null;
+  function recompute() {
+    all = K.process(state);
+    pers = K.periods(all, state.settings);
+    const keys = pers.map((p) => p.key);
+    cur = keys.includes(state.valdPeriod) ? state.valdPeriod : keys[keys.length - 1] || null;
+  }
+
+  let toastTimer = null;
+  function toast(msg, action) {
+    const t = $('toast'); t.textContent = ''; t.append(msg);
+    if (action) { const b = document.createElement('button'); b.type = 'button'; b.className = 'toastbtn'; b.textContent = action.label; b.addEventListener('click', () => { t.hidden = true; action.fn(); }); t.append(' ', b); }
+    t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, action ? 7000 : 3200);
+  }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function frag(parts) { const f = document.createDocumentFragment(); parts.forEach((p) => f.append(typeof p === 'string' ? document.createTextNode(p) : p)); return f; }
+  const B = (t) => el('b', null, t);
+
+  function periodOf(k) { return pers.find((p) => p.key === k); }
+  function periodLabel(p, long) {
+    if (!p) return '';
+    if (p.slut) return long ? `${dShort(p.start)} till ${dLong(p.slut)}` : `${dShort(p.start)} till ${dShort(p.slut)}`;
+    return long ? `Från ${dLong(p.start)}` : `Från ${dShort(p.start)}`;
+  }
+  function prevKey(k) { const i = pers.findIndex((p) => p.key === k); return i > 0 ? pers[i - 1].key : null; }
+  const isLatest = (k) => pers.length && pers[pers.length - 1].key === k;
+  const typicalLen = () => { const l = pers.filter((p) => p.slut).map((p) => daysBetween(p.start, p.slut) + 1).sort((a, c) => a - c); return l.length ? l[Math.floor(l.length / 2)] : 30; };
+  const kontoNamn = (typ) => Object.keys(state.konton).filter((n) => (state.konton[n].typ === 'gemensamt') === (typ === 'gemensamt')).sort();
+
+  function urvalText(scope) {
+    const egna = kontoNamn('mitt'), gem = kontoNamn('gemensamt');
+    if (scope === 'gemensamt') return `Bara det gemensamma kontot (${gem.join(', ') || 'inget inläst'}).`;
+    return `Din ekonomi: ${egna.join(', ') || 'dina konton'}. Det du för över till gemensamt konto räknas som kostnad.`;
+  }
+  function strip(box, k, scope) {
+    box.textContent = '';
+    const p = periodOf(k); if (!p) return;
+    const parts = [B('Period '), periodLabel(p, true)];
+    parts.push(p.lon ? `, från lönen ${dShort(p.start)}` : `, ingen lön hittad, startar den ${state.settings.startdag}:e`);
+    if (isLatest(k)) { const gone = daysBetween(p.start, today()) + 1; if (gone > 0) parts.push(`. Pågår, dag ${gone} av ungefär ${typicalLen()}`); }
+    parts.push('.');
+    const n = all.filter((t) => t.period === k && K.inScope(t, scope)).length;
+    box.append(frag(parts), el('br'), frag([B('Urval '), urvalText(scope), ` ${n} poster.`]));
+  }
+
+  // ---------- Summering ----------
+  // Min ekonomi: egna konton, överföring till gemensamt är en kostnad. Valfritt: fördela den kostnaden
+  // på kategorier i samma proportioner som pengarna användes på gemensamt. Summan ändras aldrig.
+  function sumList(list, scope) {
+    const s = K.summarizeTx(list, scope);
+    if (scope === 'mitt' && state.ui.fordela) {
+      const G = -(s.sums.gemensamt || 0);
+      if (G > 0) {
+        const g = K.summarizeTx(list, 'gemensamt');
+        const costs = UT.filter((c) => c.id !== 'gemensamt').map((c) => [c.id, -(g.sums[c.id] || 0)]).filter(([, v]) => v > 0);
+        const J = costs.reduce((x, [, v]) => x + v, 0);
+        if (J > 0) { costs.forEach(([id, v]) => { s.sums[id] -= (G * v) / J; }); s.sums.gemensamt = 0; }
+      }
+    }
+    return s;
+  }
+  const sumPeriod = (k, scope) => sumList(all.filter((t) => t.period === k), scope || 'mitt');
+  function transferAvg(k) {
+    const prev = pers.filter((p) => p.key < k).slice(-3).map((p) => -(K.summarize(all, p.key, 'mitt').sums.gemensamt || 0)).filter((v) => v > 0);
+    return prev.length ? Math.round(prev.reduce((x, v) => x + v, 0) / prev.length / 100) * 100 : 0;
+  }
+  function andelInfo(list) {
+    const g = K.summarizeTx(list, 'gemensamt'); const mig = g.sums.fran_mig || 0, ovr = g.inn - mig;
+    return { mig, ovr, pct: mig + ovr > 0 ? Math.round((100 * mig) / (mig + ovr)) : null };
+  }
+
+  // ---------- Budget och rekommendationer ----------
+  function rekFor(c, k) { return c.id === 'gemensamt' ? transferAvg(k) : (c.rek || 0); }
+  function rekBudget(k) { const cats = {}; UT.forEach((c) => { if (c.id !== 'engang') cats[c.id] = rekFor(c, k); }); return { inc: null, cats, oneoffs: [] }; }
+  function budgetFor(k, create) {
+    if (!k) return rekBudget(k);
+    if (state.budgets[k]) return state.budgets[k];
+    let b;
+    const ks = pers.map((p) => p.key).filter((x) => x < k && state.budgets[x]);
+    if (ks.length) { const src = state.budgets[ks[ks.length - 1]]; const sp = periodOf(ks[ks.length - 1]); b = { inc: null, cats: { ...src.cats }, oneoffs: [], ursprung: `Kopierad från perioden ${sp ? periodLabel(sp).toLowerCase() : ks[ks.length - 1]}.` }; }
+    else { b = rekBudget(k); b.ursprung = 'Rekommenderade belopp.'; }
+    if (create) state.budgets[k] = b;
+    return b;
+  }
+  const oneoffSum = (b) => b.oneoffs.reduce((s, o) => s + (+o.belopp || 0), 0);
+  function budgetTotal(b) { return Object.values(b.cats).reduce((s, v) => s + (+v || 0), 0) + oneoffSum(b); }
+  function catBudget(b, id) { return id === 'engang' ? oneoffSum(b) : (+b.cats[id] || 0); }
+  function autoIncome(k) {
+    const s = k ? K.summarize(all, k, 'mitt') : null;
+    if (s && s.inn > 0) return s.inn;
+    const p = prevKey(k);
+    return p ? K.summarize(all, p, 'mitt').inn : 0;
+  }
+  function incomeFor(k) { const b = budgetFor(k, false); return b.inc != null ? b.inc : r0(autoIncome(k)); }
+
+  // ---------- Modell ----------
+  function model(k, scope) {
+    scope = scope || 'mitt';
+    const s = sumPeriod(k, scope);
+    const b = budgetFor(k, false);
+    const mitt = scope === 'mitt';
+    const grupper = K.GRUPPER.map((g) => {
+      const rader = UT.filter((c) => c.grupp === g.id).map((c) => ({ id: c.id, namn: c.namn, besk: c.besk, budget: mitt ? catBudget(b, c.id) : 0, utfall: r0(-(s.sums[c.id] || 0)) }))
+        .filter((r) => r.budget > 0 || Math.abs(r.utfall) >= 1);
+      return { ...g, rader, budget: rader.reduce((x, r) => x + r.budget, 0), utfall: rader.reduce((x, r) => x + r.utfall, 0) };
+    });
+    const budget = UT.reduce((x, c) => x + (mitt ? catBudget(b, c.id) : 0), 0);
+    const ptx = all.filter((t) => t.period === k && K.inScope(t, scope));
+    const top = ptx.filter((t) => t.belopp < 0 && K.CAT[t.kat] && K.CAT[t.kat].typ === 'ut')
+      .map((t) => ({ datum: t.datum, text: t.text, kategori: K.CAT[t.kat].namn, belopp: t.belopp }))
+      .sort((a, c) => a.belopp - c.belopp).slice(0, 8);
+    const prognosUt = UT.reduce((x, c) => { const u = r0(-(s.sums[c.id] || 0)); return x + Math.max(u, mitt ? catBudget(b, c.id) : 0); }, 0);
+    let saker = 0, totU = 0;
+    ptx.filter((t) => K.CAT[t.kat] && K.CAT[t.kat].typ === 'ut' && t.belopp < 0).forEach((t) => { const v = -t.belopp; totU += v; if (t.manuell || t.kat === 'gemensamt' || SAKER.includes(t.kalla)) saker += v; });
+    return { s, b, grupper, budget, utfall: s.ut, innFakt: s.inn, innPlan: mitt ? incomeFor(k) : s.inn, inn: s.inn, top, scope, prognosUt, sakerAndel: totU ? saker / totU : 1 };
+  }
+
+  // ---------- Sortering och regler ----------
+  function needsReview(t) { return !t.manuell && t.kat !== 'intern' && (t.kat === 'okant' || t.kalla === 'gissning'); }
+  function affected(key) { const k = K.keyText(key); if (!k) return 0; return all.filter((x) => !x.manuell && (K.keyText(x.text) === k || K.keyText(x.text).startsWith(k + ' '))).length; }
+  function assign(t, cat, remember, key) {
+    const snap = JSON.stringify({ regler: state.regler, overrides: state.overrides });
+    let msg;
+    state.overrides[t.id] = cat;
+    if (remember && key && t.kalla !== 'betalsätt') {
+      const k = K.keyText(key); const n = affected(k);
+      state.regler = state.regler.filter((r) => !(r.nyckel && K.keyText(r.nyckel) === k) && !(r.exakt && K.keyText(r.exakt) === k));
+      state.regler.unshift({ nyckel: k, c: cat });
+      msg = `${K.CAT[cat].namn}. Regeln ”${k}” gäller ${n} ${n === 1 ? 'post' : 'poster'}.`;
+    } else msg = `Sparat som ${K.CAT[cat].namn}.`;
+    const ok = save(); refresh();
+    if (ok) toast(msg, { label: 'Ångra', fn: () => { const o = JSON.parse(snap); state.regler = o.regler; state.overrides = o.overrides; save(); refresh(); toast('Ändringen är ångrad'); } });
+  }
+  function tagFor(t) {
+    if (t.manuell) return ['Ändrad', ''];
+    if (t.kalla === 'din regel') return ['Din regel', ''];
+    if (t.kalla === 'gissning') return ['Gissning', 'gissning'];
+    if (t.kalla === 'betalsätt') return ['Betalsätt', 'okant'];
+    if (t.kat === 'okant') return ['Okänt', 'okant'];
+    if (t.kat === 'intern') return ['Intern', ''];
+    return ['Regel', ''];
+  }
+
+  // ---------- Period ----------
+  function renderPeriods() {
+    const sel = $('period'); sel.textContent = '';
+    if (!pers.length) { sel.appendChild(new Option('Ingen data än', '')); sel.disabled = true; return; }
+    sel.disabled = false;
+    [...pers].reverse().forEach((p) => sel.appendChild(new Option(periodLabel(p) + (isLatest(p.key) ? ' (pågår)' : ''), p.key)));
+    sel.value = cur;
+  }
+
+  // ---------- Översikt ----------
+  const SEG = [['fast', 'var(--c-fast)', 'Fasta'], ['rorlig', 'var(--c-rorlig)', 'Rörliga'], ['ovr', 'var(--c-ovr)', 'Engångs, spel, osorterat']];
+  function renderOverview() {
+    const empty = $('ovEmpty'), body = $('ovBody'); empty.textContent = '';
+    if (!cur) {
+      body.hidden = true;
+      const e = el('div', 'empty');
+      e.appendChild(el('h2', null, 'Välkommen till kassaboken'));
+      e.appendChild(el('p', 'hint', 'Här ser du vart pengarna går varje löneperiod och hur det går mot budgeten.'));
+      const ol = el('ol', 'steps');
+      ['Ladda ner kontoutdragen som Excel från Handelsbanken, för alla konton.', 'Läs in dem under Importera. Allt sorteras automatiskt.', 'Sortera det som behöver dig under Sortera och sätt budget under Budget.'].forEach((t) => ol.appendChild(el('li', null, t)));
+      e.appendChild(ol);
+      const a = el('a', 'btn primary', 'Läs in kontoutdrag'); a.href = '#konton'; e.appendChild(a);
+      empty.appendChild(e); return;
+    }
+    body.hidden = false;
+    const scope = 'mitt', mitt = true;
+    $('ovFordela').checked = !!state.ui.fordela;
+    strip($('ovStrip'), cur, scope);
+    const m = model(cur, scope);
+    const plus = m.inn - m.utfall;
+    $('eqIn').textContent = nf(m.inn); $('eqUt').textContent = nf(m.utfall);
+    $('eqResK').textContent = plus >= 0 ? 'Plus' : 'Minus'; $('eqRes').textContent = kr(plus);
+    $('eqResBox').classList.toggle('neg', plus < 0);
+    const prog = $('eqProg'); prog.textContent = '';
+    if (mitt && isLatest(cur)) {
+      const pp = m.innPlan - m.prognosUt;
+      prog.append(frag(['Prognos: med planerad inkomst ', B(kr(m.innPlan)), ' och budgeten hållen resten av perioden landar du på ', B(kr(pp)), '.']));
+    } else if (mitt) {
+      prog.append(frag(['Perioden är avslutad. Budget ', B(kr(m.budget)), ', utfall ', B(kr(m.utfall)), '.']));
+    }
+    if (!kontoNamn('gemensamt').length) prog.append(el('div', 'hint', 'Inget gemensamt konto är inläst. Överföringar dit kan då inte skiljas från sparande.'));
+    else if (!all.some((t) => t.period === cur && t.kontotyp === 'gemensamt')) prog.append(el('div', 'hint', 'Gemensamt konto saknar poster för perioden. Läs in det, annars ser överföringar dit ut som sparande.'));
+
+    // Stapel
+    const st = $('stack'), lg = $('legend'); st.textContent = ''; lg.textContent = '';
+    const denom = Math.max(m.inn, m.utfall, 1);
+    SEG.forEach(([id, col, lab]) => {
+      const g = m.grupper.find((x) => x.id === id); const v = Math.max(0, g.utfall);
+      if (v > 0) { const i = el('i'); i.style.width = (100 * v / denom) + '%'; i.style.background = col; st.appendChild(i); }
+      const sp = el('span'); const sw = el('i'); sw.style.background = col; sp.append(sw, `${lab} `, B(kr(g.utfall))); lg.appendChild(sp);
+    });
+    const sp = el('span'); const sw = el('i'); sw.style.background = plus >= 0 ? 'var(--pine-soft)' : 'var(--red)'; sw.style.border = '1px solid var(--line)';
+    sp.append(sw, plus >= 0 ? 'Kvar ' : 'Över inkomsten ', B(kr(Math.abs(plus)))); lg.appendChild(sp);
+
+    const notice = $('unknownNotice'); notice.textContent = '';
+    const q = all.filter((t) => t.period === cur && needsReview(t));
+    if (q.length) {
+      const n = el('div', 'notice');
+      n.appendChild(el('span', null, `${q.length} ${q.length === 1 ? 'post behöver' : 'poster behöver'} sorteras eller bekräftas.`));
+      const bt = el('a', 'btn small', 'Sortera'); bt.href = '#sortera'; n.appendChild(bt); notice.appendChild(n);
+    }
+    renderBuffer();
+    $('trust').textContent = `Sorterat enligt regler eller av dig: ${Math.round(100 * m.sakerAndel)} % av utgifterna. Resten är gissningar eller osorterat.`;
+
+    const wrap = $('groups'); wrap.textContent = '';
+    m.grupper.forEach((g) => {
+      if (!g.rader.length) return;
+      const d = el('details', 'grp g-' + g.id); const sm = el('summary');
+      const r1 = el('div', 'r1'); r1.appendChild(el('span', 't', g.namn));
+      const s = el('span', 's'); s.append(B(nf(g.utfall)), mitt && g.budget ? ` av ${kr(g.budget)}` : ' kr'); r1.appendChild(s);
+      sm.appendChild(r1); sm.appendChild(el('div', 'd', g.besk));
+      if (mitt && g.budget) { const bar = el('div', 'bar'); const i = el('i'); i.style.width = Math.min(100, 100 * g.utfall / g.budget) + '%'; if (g.utfall > g.budget) i.style.background = 'var(--red)'; bar.appendChild(i); sm.appendChild(bar); }
+      d.appendChild(sm);
+      const inner = el('div', 'inner');
+      g.rader.sort((a, c) => (c.budget - a.budget) || (c.utfall - a.utfall)).forEach((r) => inner.appendChild(envelope(r, mitt)));
+      d.appendChild(inner); wrap.appendChild(d);
+    });
+    const incs = K.CATS.filter((c) => c.typ === 'in').map((c) => ({ c, v: m.s.sums[c.id] || 0 })).filter((x) => Math.abs(x.v) >= 1);
+    if (incs.length) {
+      const d = el('details', 'grp g-in'); const sm = el('summary'); const r1 = el('div', 'r1');
+      r1.appendChild(el('span', 't', 'Inkomster')); const s = el('span', 's'); s.append(B(kr(m.inn))); r1.appendChild(s);
+      sm.appendChild(r1); sm.appendChild(el('div', 'd', mitt ? 'Lön och bidrag som kommit in på dina konton.' : 'Inklusive sambons insättningar.'));
+      d.appendChild(sm); const inner = el('div', 'inner');
+      incs.forEach(({ c, v }) => { const e = el('details', 'env'); const s2 = el('summary'); const rr = el('div', 'row1'); rr.appendChild(el('span', 'name', c.namn)); const vv = el('span', 'vals'); vv.appendChild(el('b', 'num', kr(v))); rr.appendChild(vv); s2.appendChild(rr); e.appendChild(s2); e.appendChild(el('div', 'more', c.besk)); inner.appendChild(e); });
+      d.appendChild(inner); wrap.appendChild(d);
+    }
+  }
+  function envelope(r, mitt) {
+    const d = el('details', 'env'); const sm = el('summary');
+    const r1 = el('div', 'row1'); r1.appendChild(el('span', 'name', r.namn));
+    const v = el('span', 'vals'); v.appendChild(el('b', 'num', nf(r.utfall)));
+    v.appendChild(document.createTextNode(r.budget > 0 ? ` av ${kr(r.budget)}` : ' kr'));
+    r1.appendChild(v); sm.appendChild(r1);
+    if (mitt && r.budget > 0) {
+      const pct = Math.max(0, r.utfall / r.budget);
+      const bar = el('div', 'bar'); const i = el('i'); i.style.width = Math.min(100, pct * 100) + '%'; bar.appendChild(i); sm.appendChild(bar);
+      const rest = r.budget - r.utfall;
+      sm.appendChild(el('div', 'rest', rest >= 0 ? `${kr(rest)} kvar` : `${kr(-rest)} över budget`));
+      if (pct > 1) d.classList.add('over'); else if (pct > 0.85) d.classList.add('warn');
+    } else if (mitt && r.utfall > 0) { d.classList.add('nobudget'); sm.appendChild(el('div', 'rest', 'Ingen budget satt')); }
+    d.appendChild(sm);
+    const more = el('div', 'more'); more.appendChild(el('div', null, r.besk));
+    const bt = el('button', 'btn small', 'Visa poster'); bt.type = 'button'; bt.addEventListener('click', () => showPosts(r.id));
+    more.appendChild(bt); d.appendChild(more);
+    return d;
+  }
+  function showPosts(cat) { $('fCat').value = cat; $('fAcc').value = ''; $('fSearch').value = ''; $('fScope').value = 'period'; location.hash = '#sortera'; setTimeout(() => { const h = $('txList'); if (h) h.scrollIntoView({ block: 'start' }); }, 60); }
+
+  $('ovFordela').addEventListener('change', () => { state.ui.fordela = $('ovFordela').checked; save(); renderOverview(); });
+
+  // ---------- Gemensamt (egen vy) ----------
+  function renderJoint() {
+    const box = $('jBody'), empty = $('jEmpty'); empty.textContent = '';
+    if (!kontoNamn('gemensamt').length || !cur) {
+      box.hidden = true;
+      empty.appendChild(el('div', 'empty', 'Inget gemensamt konto är inläst. Läs in kontoutdraget under Importera och ange kontotypen Gemensamt.'));
+      return;
+    }
+    box.hidden = false;
+    strip($('jStrip'), cur, 'gemensamt');
+    const m = model(cur, 'gemensamt'); const res = m.inn - m.utfall;
+    $('jIn').textContent = nf(m.inn); $('jUt').textContent = nf(m.utfall);
+    $('jResK').textContent = res >= 0 ? 'Kvar på kontot' : 'Saknas'; $('jRes').textContent = kr(res);
+    $('jResBox').classList.toggle('neg', res < 0);
+    const ai = andelInfo(all.filter((t) => t.period === cur));
+    const ai12 = andelInfo(all.filter((t) => pers.slice(-12).some((p) => p.key === t.period)));
+    const info = $('jAndel'); info.textContent = '';
+    info.append(frag(['Du satte in ', B(kr(ai.mig)), ' och övriga insättningar var ', B(kr(ai.ovr)), '.', ai.pct != null ? ` Din andel den här perioden: ${ai.pct} %.` : '', ai12.pct != null ? ` Snitt senaste tolv perioderna: ${ai12.pct} %.` : '']));
+    const wrap = $('jGroups'); wrap.textContent = '';
+    m.grupper.forEach((g) => {
+      if (!g.rader.length) return;
+      const d = el('details', 'grp g-' + g.id); d.open = true; const sm = el('summary');
+      const r1 = el('div', 'r1'); r1.appendChild(el('span', 't', g.namn)); const s = el('span', 's'); s.append(B(kr(g.utfall))); r1.appendChild(s);
+      sm.appendChild(r1); d.appendChild(sm);
+      const inner = el('div', 'inner');
+      g.rader.sort((a, c) => c.utfall - a.utfall).forEach((r) => inner.appendChild(envelope(r, false)));
+      d.appendChild(inner); wrap.appendChild(d);
+    });
+    const top = $('jTop'); top.textContent = '';
+    m.top.forEach((t) => { const tr = el('tr'); const td = el('td'); td.append(el('div', null, t.text), el('div', 'hint', `${dShort(t.datum)}, ${t.kategori}`)); td.lastChild.style.margin = '0'; tr.append(td, el('td', 'r', kr(t.belopp))); top.appendChild(tr); });
+  }
+
+  // ---------- Buffert ----------
+  function bufSorted() { return [...(state.buffert || [])].sort((a, c) => a.man.localeCompare(c.man)); }
+  function renderBuffer() {
+    $('bufLabel').textContent = state.settings.bufNamn || 'Buffertkonto';
+    const l = bufSorted(); const last = l[l.length - 1], prev = l[l.length - 2];
+    $('bufVal').textContent = last ? kr(last.saldo) : 'Inget saldo angivet';
+    const dd = $('bufDiff'); dd.textContent = '';
+    if (last) {
+      dd.append(`Angivet för ${mLabel(last.man)}`);
+      if (prev) { const ch = last.saldo - prev.saldo; dd.append(', ', el('span', ch >= 0 ? 'up' : 'down', `${ch >= 0 ? '+' : '−'}${kr(Math.abs(ch))}`), ` sedan ${mLabel(prev.man)}`); }
+      dd.append('.');
+      const nowM = today().slice(0, 7);
+      if (last.man < nowM) dd.append(` Dags att ange ${mLabel(nowM)}.`);
+    }
+    if (!$('bufMonth').value) $('bufMonth').value = today().slice(0, 7);
+  }
+  $('bufSave').addEventListener('click', () => {
+    const man = $('bufMonth').value, v = $('bufAmt').value;
+    if (!man || v === '') { toast('Ange månad och saldo'); return; }
+    state.buffert = (state.buffert || []).filter((x) => x.man !== man);
+    state.buffert.push({ man, saldo: Number(v) });
+    if (save()) { $('bufAmt').value = ''; renderBuffer(); toast(`Buffert för ${mLabel(man)} sparad`); }
+  });
+  function renderBufferYear() {
+    const rows = $('bufRows'), tab = $('bufTable'); rows.textContent = ''; tab.textContent = '';
+    const l = bufSorted().slice(-12);
+    if (!l.length) { rows.appendChild(el('p', 'hint', 'Inga saldon angivna än. Skriv in saldot under Översikt.')); return; }
+    const max = Math.max(1, ...l.map((x) => x.saldo));
+    l.forEach((x) => {
+      const r = el('div', 'yrow'); r.appendChild(el('span', 'lab', mLabel(x.man)));
+      const tr = el('div', 'track'); const i = el('i'); i.style.left = '0'; i.style.width = (100 * x.saldo / max) + '%'; i.style.background = 'var(--c-buf)'; tr.appendChild(i);
+      r.appendChild(tr); r.appendChild(el('span', 'val', nf(x.saldo))); rows.appendChild(r);
+    });
+    const th = el('tr'); [['Månad', ''], ['Saldo', 'r'], ['Förändring', 'r']].forEach(([t, c]) => th.appendChild(el('th', c, t))); tab.appendChild(th);
+    l.forEach((x, i) => { const ch = i ? x.saldo - l[i - 1].saldo : null; const tr = el('tr'); tr.append(el('td', null, mLabel(x.man)), el('td', 'r', nf(x.saldo)), el('td', 'r' + (ch < 0 ? ' neg' : ''), ch == null ? '' : (ch >= 0 ? '+' : '') + nf(ch))); tab.appendChild(tr); });
+  }
+
+  // ---------- Sortera ----------
+  function renderSort() {
+    document.querySelectorAll('[data-sscope]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sscope === state.ui.sscope)));
+    const list = $('sortList'); list.textContent = '';
+    const q = all.filter((t) => (state.ui.sscope === 'alla' || t.period === cur) && needsReview(t)).sort((a, b) => Math.abs(b.belopp) - Math.abs(a.belopp));
+    if (!q.length) { list.appendChild(el('div', 'empty', cur ? 'Inget att sortera här.' : 'Inga kontoutdrag inlästa än.')); return; }
+    list.appendChild(el('p', 'hint', `${q.length} ${q.length === 1 ? 'post' : 'poster'}, störst belopp först.`));
+    q.slice(0, 150).forEach((t) => {
+      const it = el('div', 'sitem');
+      const r1 = el('div', 'r1'); r1.append(el('span', 't', t.text), el('span', 'a', kr(t.belopp))); it.appendChild(r1);
+      const [tag, cls] = tagFor(t);
+      const meta = el('div', 'm', `${dShort(t.datum)}, ${t.konto}`); const tg = el('span', 'tag ' + cls, tag); meta.appendChild(tg);
+      if (t.kalla === 'betalsätt') meta.append(' Välj vad köpet gällde.');
+      it.appendChild(meta);
+      const qq = el('div', 'q');
+      if (t.kalla === 'gissning') {
+        const ok = el('button', 'ok', `Stämmer: ${K.CAT[t.kat].namn}`); ok.type = 'button';
+        ok.addEventListener('click', () => assign(t, t.kat, t.kat === 'swish', t.text)); qq.appendChild(ok);
+      }
+      (t.belopp > 0 ? QUICK_IN : QUICK).filter((c) => c !== t.kat).slice(0, t.kalla === 'gissning' ? 5 : 6).forEach((c) => {
+        const b = el('button', null, K.CAT[c].namn); b.type = 'button';
+        b.addEventListener('click', () => assign(t, c, t.kalla !== 'betalsätt', K.suggestKey(t.text))); qq.appendChild(b);
+      });
+      const more = el('button', null, 'Annat…'); more.type = 'button'; more.addEventListener('click', () => openSheet(t)); qq.appendChild(more);
+      it.appendChild(qq); list.appendChild(it);
+    });
+  }
+  document.querySelectorAll('[data-sscope]').forEach((b) => b.addEventListener('click', () => { state.ui.sscope = b.dataset.sscope; save(); renderSort(); }));
+
+  // ---------- Alla poster ----------
+  function fillFilters() {
+    const fc = $('fCat'), fa = $('fAcc'); const keepC = fc.value, keepA = fa.value;
+    fc.textContent = ''; fc.appendChild(new Option('Alla kategorier', ''));
+    K.CATS.forEach((c) => fc.appendChild(new Option(c.namn, c.id)));
+    fa.textContent = ''; fa.appendChild(new Option('Alla konton', ''));
+    Object.keys(state.konton).sort().forEach((k) => fa.appendChild(new Option(k, k)));
+    fc.value = keepC; fa.value = keepA;
+  }
+  let txLimit = 200;
+  function renderTx() {
+    const list = $('txList'); list.textContent = '';
+    const fc = $('fCat').value, fa = $('fAcc').value, qs = $('fSearch').value.trim().toLowerCase(), sc = $('fScope').value;
+    const rowsAll = all.filter((t) => (sc === 'alla' || t.period === cur) && (!fc || t.kat === fc) && (!fa || t.konto === fa) && (!qs || t.text.toLowerCase().includes(qs)))
+      .sort((a, b) => b.datum.localeCompare(a.datum) || a.text.localeCompare(b.text));
+    if (!rowsAll.length) list.appendChild(el('div', 'empty', cur ? 'Inga poster matchar.' : 'Inga kontoutdrag inlästa än.'));
+    rowsAll.slice(0, txLimit).forEach((t) => {
+      const b = el('button', 'item'); b.type = 'button';
+      b.appendChild(el('span', 't', t.text));
+      b.appendChild(el('span', 'a' + (t.belopp > 0 ? ' pos' : ''), kr(t.belopp)));
+      const [tag, cls] = tagFor(t);
+      const m = el('span', 'm', `${dShort(t.datum)}, ${t.konto}`); m.appendChild(el('span', 'tag ' + cls, tag)); b.appendChild(m);
+      const c = K.CAT[t.kat] || { namn: t.kat, typ: 'ut' };
+      b.appendChild(el('span', 'chip' + (t.kat === 'okant' ? ' okant' : '') + (c.typ === 'neutral' ? ' neutral' : ''), c.namn));
+      b.addEventListener('click', () => openSheet(t));
+      list.appendChild(b);
+    });
+    const sum = rowsAll.reduce((s, t) => s + t.belopp, 0);
+    $('txCount').textContent = rowsAll.length ? `${rowsAll.length} poster, summa ${kr(sum)}.${rowsAll.length > txLimit ? ` Visar de ${txLimit} senaste.` : ''}` : '';
+    if (rowsAll.length > txLimit) { const more = el('button', 'btn small', 'Visa 200 till'); more.type = 'button'; more.addEventListener('click', () => { txLimit += 200; renderTx(); }); list.appendChild(more); more.style.margin = '10px'; }
+  }
+  ['fCat', 'fAcc', 'fScope'].forEach((id) => $(id).addEventListener('change', () => { txLimit = 200; renderTx(); }));
+  $('fSearch').addEventListener('input', () => { txLimit = 200; renderTx(); });
+
+  // ---------- Kategoriark ----------
+  let sheetTx = null, sheetCat = null;
+  function openSheet(t) {
+    sheetTx = t; sheetCat = t.kat;
+    $('sheetTitle').textContent = t.text;
+    $('sheetMeta').textContent = `${dLong(t.datum)}, ${t.konto}, ${kr(t.belopp)}. Appens förslag: ${(K.CAT[t.auto] || {}).namn || t.auto} (${tagFor({ ...t, manuell: false })[0].toLowerCase()}).`;
+    const g = $('sheetCats'); g.textContent = '';
+    const desc = () => { $('sheetDesc').textContent = (K.CAT[sheetCat] || {}).besk || ''; };
+    K.CATS.forEach((c) => {
+      const b = el('button', null, c.namn); b.type = 'button'; b.setAttribute('aria-pressed', String(c.id === sheetCat));
+      b.addEventListener('click', () => { sheetCat = c.id; g.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); desc(); });
+      g.appendChild(b);
+    });
+    desc();
+    const bet = t.kalla === 'betalsätt';
+    $('sheetRemember').checked = !bet;
+    $('sheetRememberText').textContent = bet ? 'Kom ihåg till nästa gång. Avråds här, betalsättet används till olika köp.' : 'Kom ihåg till nästa gång';
+    $('sheetKey').value = K.suggestKey(t.text);
+    $('sheetKeyRow').hidden = bet;
+    updAffected();
+    sheetOpener = document.activeElement;
+    $('sheetBg').hidden = false;
+    const sel = g.querySelector('[aria-pressed="true"]') || g.querySelector('button'); if (sel) sel.focus();
+  }
+  let sheetOpener = null;
+  function updAffected() { const n = affected($('sheetKey').value); $('sheetAffected').textContent = $('sheetRemember').checked && $('sheetKey').value.trim() ? `Regeln gäller ${n} ${n === 1 ? 'post' : 'poster'}, även tidigare perioder.` : ''; }
+  $('sheetKey').addEventListener('input', updAffected);
+  $('sheetRemember').addEventListener('change', () => { $('sheetKeyRow').hidden = !$('sheetRemember').checked; updAffected(); });
+  function closeSheet() { $('sheetBg').hidden = true; sheetTx = null; if (sheetOpener && document.body.contains(sheetOpener)) sheetOpener.focus(); }
+  document.addEventListener('keydown', (e) => {
+    if ($('sheetBg').hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeSheet(); return; }
+    if (e.key === 'Tab') {
+      const f = [...$('sheetBg').querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled && x.offsetParent !== null);
+      if (!f.length) return; const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+  $('sheetCancel').addEventListener('click', closeSheet);
+  $('sheetBg').addEventListener('click', (e) => { if (e.target === $('sheetBg')) closeSheet(); });
+  $('sheetReset').addEventListener('click', () => { if (!sheetTx) return; delete state.overrides[sheetTx.id]; save(); closeSheet(); refresh(); toast('Återställd till appens förslag'); });
+  $('sheetSave').addEventListener('click', () => {
+    if (!sheetTx) return; const t = { ...sheetTx, kalla: $('sheetRemember').checked ? 'manuell' : sheetTx.kalla };
+    const rem = $('sheetRemember').checked; const key = $('sheetKey').value.trim();
+    closeSheet(); assign(t, sheetCat, rem && !!key, key);
+  });
+
+  // ---------- Budget och utfall ----------
+  function renderBudget() {
+    const wrap = $('bGroups'), oo = $('bOneoffs'); wrap.textContent = ''; oo.textContent = '';
+    if (!cur) { $('bStrip').textContent = 'Läs in kontoutdrag först. Sedan sätter du budget per löneperiod.'; return; }
+    strip($('bStrip'), cur, 'mitt');
+    if (isLatest(cur) && !state.budgets[cur]) { budgetFor(cur, true); save(); }
+    const b = budgetFor(cur, false);
+    const prev = prevKey(cur);
+    const sPrev = prev ? sumPeriod(prev, 'mitt') : null;
+    const sCur = sumPeriod(cur, 'mitt');
+    $('bOrigin').textContent = state.budgets[cur] ? (b.ursprung ? `Budgetens ursprung: ${b.ursprung}` : 'Budget sparad för perioden.') : 'Ingen budget sparad för perioden. Visar ett förslag som sparas när du ändrar något.';
+    $('budget').classList.toggle('cmp-on', !!state.ui.jamfor); $('bCmp').checked = !!state.ui.jamfor;
+    $('bInc').value = incomeFor(cur);
+    $('incHint').textContent = `Har kommit in hittills: ${kr(sCur.inn)}`;
+    K.GRUPPER.forEach((g) => {
+      const cats = UT.filter((c) => c.grupp === g.id && c.id !== 'engang');
+      if (!cats.length) return;
+      const gp = el('div', 'gpanel g-' + g.id);
+      const h = el('h3'); h.append(g.namn); const hs = el('span'); h.appendChild(hs); gp.appendChild(h);
+      gp.appendChild(el('p', 'hint', g.besk));
+      const panel = el('div', 'panel');
+      const rowsRef = [];
+      cats.forEach((c) => {
+        const r = el('div', 'bud');
+        const top = el('div', 'top'); const l = el('div'); l.appendChild(el('div', 'n', c.namn)); l.appendChild(el('div', 'd', c.besk));
+        l.appendChild(el('div', 'd', `Rekommenderat ${kr(rekFor(c, cur))}${sPrev ? `, förra perioden ${kr(-(sPrev.sums[c.id] || 0))}` : ''}`));
+        const inp = el('input'); inp.type = 'number'; inp.inputMode = 'numeric'; inp.step = '100'; inp.min = '0';
+        inp.value = b.cats[c.id] != null ? b.cats[c.id] : 0; inp.setAttribute('aria-label', 'Budget ' + c.namn);
+        top.append(l, inp); r.appendChild(top);
+        const out = el('div', 'out'); const ou = el('span'); const ok = el('span'); out.append(ou, ok); r.appendChild(out);
+        const bar = el('div', 'bar'); const bi = el('i'); bar.appendChild(bi); r.appendChild(bar);
+        const utf = r0(-(sCur.sums[c.id] || 0));
+        const upd = () => {
+          const bud = Number(inp.value) || 0, kv = bud - utf;
+          ou.textContent = `Utfall ${kr(utf)}`; ok.textContent = kv >= 0 ? `Kvar ${kr(kv)}` : `${kr(-kv)} över`; ok.className = kv < 0 ? 'neg' : '';
+          bi.style.width = bud > 0 ? Math.min(100, 100 * utf / bud) + '%' : (utf > 0 ? '100%' : '0');
+          r.classList.toggle('over', utf > bud && (bud > 0 || utf > 0)); r.classList.toggle('warn', bud > 0 && utf <= bud && utf / bud > 0.85);
+        };
+        rowsRef.push({ inp, utf });
+        const updGroup = () => { const gb = rowsRef.reduce((x, o) => x + (Number(o.inp.value) || 0), 0), gu = rowsRef.reduce((x, o) => x + o.utf, 0); hs.textContent = `budget ${nf(gb)}, utfall ${nf(gu)}`; };
+        inp.addEventListener('input', () => { const bb = budgetFor(cur, true); bb.cats[c.id] = inp.value === '' ? 0 : Number(inp.value); saveSoon(); upd(); updGroup(); updateTotals(); });
+        inp.addEventListener('change', save);
+        upd(); panel.appendChild(r);
+        if (c === cats[cats.length - 1]) updGroup();
+      });
+      gp.appendChild(panel); wrap.appendChild(gp);
+    });
+    if (!b.oneoffs.length) oo.appendChild(el('p', 'hint', 'Inga engångskostnader inlagda för perioden.'));
+    b.oneoffs.forEach((o, i) => {
+      const r = el('div', 'oneoff');
+      const t = el('input'); t.type = 'text'; t.placeholder = 'Vad'; t.value = o.text || ''; t.setAttribute('aria-label', 'Engångskostnad');
+      const a = el('input'); a.type = 'number'; a.inputMode = 'numeric'; a.step = '100'; a.min = '0'; a.value = o.belopp || 0; a.setAttribute('aria-label', 'Belopp');
+      const x = el('button', 'iconbtn', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Ta bort');
+      t.addEventListener('input', () => { budgetFor(cur, true).oneoffs[i].text = t.value; saveSoon(); });
+      a.addEventListener('input', () => { budgetFor(cur, true).oneoffs[i].belopp = Number(a.value) || 0; saveSoon(); updateTotals(); });
+      t.addEventListener('change', save); a.addEventListener('change', save);
+      x.addEventListener('click', () => { budgetFor(cur, true).oneoffs.splice(i, 1); save(); renderBudget(); });
+      r.append(t, a, x); oo.appendChild(r);
+    });
+    const eu = r0(-(sCur.sums.engang || 0));
+    if (eu) oo.appendChild(el('p', 'hint', `Utfall engångskostnader hittills: ${kr(eu)}`));
+    updateTotals();
+  }
+  function updateTotals() {
+    const b = budgetFor(cur, false);
+    const tot = budgetTotal(b), inc = Number($('bInc').value) || 0;
+    $('sbInc').textContent = nf(inc); $('sbBud').textContent = nf(tot); $('sbLeft').textContent = nf(inc - tot);
+    $('sbLeft').classList.toggle('neg', inc - tot < 0);
+  }
+  $('bInc').addEventListener('input', () => { if (!cur) return; const b = budgetFor(cur, true); b.inc = $('bInc').value === '' ? null : Number($('bInc').value); saveSoon(); updateTotals(); });
+  $('bInc').addEventListener('change', save);
+  $('bCmp').addEventListener('change', () => { state.ui.jamfor = $('bCmp').checked; save(); $('budget').classList.toggle('cmp-on', state.ui.jamfor); });
+  $('addOneoff').addEventListener('click', () => { if (!cur) return; budgetFor(cur, true).oneoffs.push({ text: '', belopp: 0 }); save(); renderBudget(); });
+  $('bRek').addEventListener('click', () => { if (!cur) return; const b = budgetFor(cur, true); b.cats = rekBudget(cur).cats; b.ursprung = 'Rekommenderade belopp.'; save(); renderBudget(); toast('Rekommenderade belopp ifyllda'); });
+  $('bPrev').addEventListener('click', () => {
+    if (!cur) return; const p = prevKey(cur);
+    if (!p || !state.budgets[p]) { toast('Förra perioden har ingen sparad budget'); return; }
+    const b = budgetFor(cur, true); b.cats = { ...state.budgets[p].cats }; b.ursprung = 'Kopierad från förra perioden.'; save(); renderBudget(); toast('Förra periodens budget kopierad');
+  });
+
+  // ---------- År ----------
+  function buckets(mode) {
+    if (mode === 'manad') {
+      const ms = [...new Set(all.map((t) => t.datum.slice(0, 7)))].sort().slice(-12);
+      const nowM = today().slice(0, 7);
+      return ms.map((m) => ({ key: m, label: mLabel(m), kort: mLabel(m), pagar: m === nowM, tx: all.filter((t) => t.datum.slice(0, 7) === m) }));
+    }
+    return pers.slice(-12).map((p) => ({ key: p.key, label: periodLabel(p), kort: 'Från ' + dShort(p.start), pagar: isLatest(p.key), tx: all.filter((t) => t.period === p.key) }));
+  }
+  function renderYear() {
+    const mode = state.ui.ymode, scope = state.ui.yscope;
+    document.querySelectorAll('[data-ymode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.ymode === mode)));
+    document.querySelectorAll('[data-yscope]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.yscope === scope)));
+    const bs = buckets(mode).map((b) => ({ ...b, s: sumList(b.tx, scope) }));
+    const yStrip = $('yStrip'); yStrip.textContent = '';
+    const cards = $('yCards'), rows = $('yRows'), tab = $('yTable'), cats = $('yCats');
+    cards.textContent = ''; rows.textContent = ''; tab.textContent = ''; cats.textContent = '';
+    if (!bs.length) { yStrip.textContent = 'Läs in kontoutdrag först.'; return; }
+    yStrip.append(frag([B('Indelning '), mode === 'manad' ? 'kalendermånad' : 'lön till lön', `, ${bs[0].label} till ${bs[bs.length - 1].label}.`]), el('br'), frag([B('Urval '), urvalText(scope)]));
+    if (scope === 'gemensamt') { const ai = andelInfo(bs.flatMap((x) => x.tx)); if (ai.pct != null) yStrip.append(el('br'), frag([B('Din andel '), `Du stod för ${ai.pct} % av insättningarna, ${kr(ai.mig)} av ${kr(ai.mig + ai.ovr)}.`])); }
+    const closed = bs.filter((b) => !b.pagar);
+    const res = closed.map((b) => b.s.inn - b.s.ut);
+    const tot = res.reduce((a, b) => a + b, 0);
+    const best = closed.length ? closed[res.indexOf(Math.max(...res))] : null, worst = closed.length ? closed[res.indexOf(Math.min(...res))] : null;
+    [['Totalt, avslutade', tot, tot >= 0 ? 'good' : 'bad'], ['Snitt per period', closed.length ? tot / closed.length : 0, tot >= 0 ? 'good' : 'bad'], ['Bästa', best ? best.s.inn - best.s.ut : 0, 'good', best && best.label], ['Sämsta', worst ? worst.s.inn - worst.s.ut : 0, 'bad', worst && worst.label]].forEach(([k, v, tone, sub]) => {
+      const c = el('div', 'rcard'); c.appendChild(el('div', 'k', k)); c.appendChild(el('div', 'v ' + (v >= 0 ? 'good' : 'bad'), kr(v))); if (sub) c.appendChild(el('div', 'k', sub)); cards.appendChild(c);
+    });
+    const maxAbs = Math.max(1, ...bs.map((b) => Math.abs(b.s.inn - b.s.ut)));
+    bs.forEach((b) => {
+      const v = b.s.inn - b.s.ut; const r = el('div', 'yrow');
+      r.appendChild(el('span', 'lab', b.kort + (b.pagar ? ' *' : '')));
+      const tr = el('div', 'track'); tr.appendChild(el('span', 'mid')); const i = el('i'); const w = 50 * Math.abs(v) / maxAbs;
+      i.style.width = w + '%'; i.style.left = v >= 0 ? '50%' : (50 - w) + '%'; i.style.background = v >= 0 ? 'var(--pine)' : 'var(--red)'; if (b.pagar) i.style.opacity = '.45';
+      tr.appendChild(i); r.appendChild(tr); r.appendChild(el('span', 'val' + (v < 0 ? ' neg' : ''), nf(v))); rows.appendChild(r);
+    });
+    if (bs.some((b) => b.pagar)) rows.appendChild(el('p', 'hint', '* Pågår, räknas inte in i totalen.'));
+    const th = el('tr'); [['Period', ''], ['In', 'r'], ['Ut', 'r'], ['Plus', 'r']].forEach(([t, c]) => th.appendChild(el('th', c, t))); tab.appendChild(th);
+    bs.forEach((b) => { const v = b.s.inn - b.s.ut; const tr = el('tr'); tr.append(el('td', null, b.label + (b.pagar ? ' *' : '')), el('td', 'r', nf(b.s.inn)), el('td', 'r', nf(b.s.ut)), el('td', 'r' + (v < 0 ? ' neg' : ''), nf(v))); tab.appendChild(tr); });
+    const sIn = closed.reduce((a, b) => a + b.s.inn, 0), sUt = closed.reduce((a, b) => a + b.s.ut, 0);
+    const tt = el('tr', 't'); tt.append(el('td', null, 'Summa avslutade'), el('td', 'r', nf(sIn)), el('td', 'r', nf(sUt)), el('td', 'r' + (sIn - sUt < 0 ? ' neg' : ''), nf(sIn - sUt))); tab.appendChild(tt);
+    const ch = el('tr'); [['Kategori', ''], ['Summa', 'r'], ['Snitt', 'r']].forEach(([t, c]) => ch.appendChild(el('th', c, t))); cats.appendChild(ch);
+    const n = Math.max(1, closed.length);
+    UT.map((c) => ({ c, v: closed.reduce((a, b) => a - (b.s.sums[c.id] || 0), 0) })).filter((x) => Math.abs(x.v) >= 1).sort((a, b) => b.v - a.v)
+      .forEach(({ c, v }) => { const tr = el('tr'); tr.append(el('td', null, c.namn), el('td', 'r', nf(v)), el('td', 'r', nf(v / n))); cats.appendChild(tr); });
+    renderBufferYear();
+  }
+  // buffert i årsvyn
+  document.querySelectorAll('[data-ymode]').forEach((b) => b.addEventListener('click', () => { state.ui.ymode = b.dataset.ymode; save(); renderYear(); }));
+  document.querySelectorAll('[data-yscope]').forEach((b) => b.addEventListener('click', () => { state.ui.yscope = b.dataset.yscope; save(); renderYear(); }));
+
+  // ---------- Inställningar och regler ----------
+  function renderRules() {
+    const w = $('ruleList'); w.textContent = '';
+    if (!state.regler.length) { w.appendChild(el('p', 'hint', 'Inga egna regler än.')); return; }
+    state.regler.forEach((r, i) => {
+      const row = el('div', 'rule');
+      const txt = r.nyckel ? `Börjar med ”${r.nyckel}”` : `”${r.exakt || r.s || r.r}”`;
+      row.appendChild(el('span', null, `${txt} blir ${(K.CAT[r.c] || {}).namn || r.c}`));
+      const x = el('button', 'btn small', 'Ta bort'); x.type = 'button';
+      x.addEventListener('click', () => { state.regler.splice(i, 1); save(); refresh(); });
+      row.appendChild(x); w.appendChild(row);
+    });
+  }
+  function bindSetting(id, key, num) {
+    const i = $(id); i.value = state.settings[key];
+    i.addEventListener('change', () => { state.settings[key] = num ? Number(i.value) : i.value; save(); refresh(); });
+  }
+  bindSetting('sMinLon', 'minLon', true); bindSetting('sStart', 'startdag', true); bindSetting('sNamn', 'egetNamn', false);
+  bindSetting('sBuf', 'bufNamn', false);
+
+  // ---------- Spara filer ----------
+  function noter(k) {
+    const n = ['Det du för över till gemensamt konto räknas som kostnad.', 'Överföringar mellan egna konton och sparande räknas inte som utgifter.'];
+    if (isLatest(k)) n.unshift('Perioden pågår. Utfall är det som dragits hittills.');
+    return n;
+  }
+  async function saveFile(filename, data, okMsg) {
+    let dl = null;
+    try { if (window.claude && typeof window.claude.use === 'function') dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
+    if (dl) {
+      try { await dl.save({ filename, data }); toast(okMsg); }
+      catch (e) { if (e && e.code === 'declined') toast('Sparandet avbröts'); else if (e && e.code === 'rate_limited') toast('Vänta en stund och försök igen'); else toast('Det går inte att spara filer här'); }
+      return;
+    }
+    if (window.claude) { toast('Det går inte att spara filer här'); return; }
+    const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    if ((standalone || ios) && navigator.canShare) {
+      try {
+        const type = /\.pdf$/.test(filename) ? 'application/pdf' : /\.xlsx$/.test(filename) ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/json';
+        const file = new File([data], filename, { type });
+        if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); toast(okMsg); return; }
+      } catch (e) { if (e && e.name === 'AbortError') { toast('Sparandet avbröts'); return; } }
+    }
+    const blob = data instanceof Blob ? data : new Blob([data]);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast(okMsg);
+  }
+  const fileStamp = (k) => (periodOf(k) ? periodOf(k).start : today());
+
+  $('savePdf').addEventListener('click', () => {
+    if (!cur) { toast('Läs in kontoutdrag först'); return; }
+    const m = model(cur, 'mitt'); const p = periodOf(cur);
+    const plus = m.innFakt - m.utfall;
+    const u8 = PdfW.report({
+      titel: 'Budget', period: periodLabel(p, true), omfang: 'Din del', skapad: today(),
+      kort: [{ label: isLatest(cur) ? 'Inkomst hittills' : 'Inkomst', value: kr(m.innFakt) }, { label: 'Budget', value: kr(m.budget) }, { label: 'Utfall', value: kr(m.utfall) }, { label: plus >= 0 ? 'Plus' : 'Minus', value: kr(plus), tone: plus >= 0 ? 'good' : 'bad' }],
+      grupper: m.grupper.map((g) => ({ namn: g.namn, rader: g.rader.map((r) => ({ namn: r.namn, budget: r.budget, utfall: r.utfall })) })),
+      inkomst: m.innFakt, planerad: m.innPlan, budget: m.budget,
+      top: m.top.slice(0, 6).map((t) => ({ datum: t.datum, text: t.text, kategori: t.kategori, belopp: t.belopp })),
+      noter: [urvalText('mitt'), ...noter(cur)],
+    });
+    saveFile(`Budget ${fileStamp(cur)}.pdf`, u8, 'PDF:en är sparad');
+  });
+
+  $('saveXlsx').addEventListener('click', () => {
+    if (!cur) { toast('Läs in kontoutdrag först'); return; }
+    const m = model(cur, 'mitt'); const p = periodOf(cur);
+    // Blad 1: Budget
+    const rows = [], merges = ['A1:F1', 'A2:F2'], heights = { 0: 30 };
+    rows.push([{ v: 'Budget', s: 'title' }]);
+    rows.push([{ v: `${periodLabel(p, true)}. ${urvalText('mitt')} Skapad ${today()}.`, s: 'sub' }]);
+    rows.push([]);
+    const rInc = rows.length + 1; rows.push([{ v: 'Inkomst', s: 'b' }, { v: isLatest(cur) ? 'Lön och bidrag som kommit in hittills' : 'Lön och bidrag i perioden', s: 'note' }, { v: m.innFakt, s: 'krBig' }]);
+    const rPlan = rows.length + 1; rows.push([{ v: 'Planerad inkomst', s: 'b' }, { v: 'Inkomst enligt budgeten', s: 'note' }, { v: m.innPlan, s: 'krBig' }]);
+    const rBud = rows.length + 1; rows.push([{ v: 'Budget totalt', s: 'b' }, { v: 'Summan av alla kategorier', s: 'note' }, null]);
+    const rUtf = rows.length + 1; rows.push([{ v: 'Utfall', s: 'b' }, { v: isLatest(cur) ? 'Dragits hittills i perioden' : 'Dragits under perioden', s: 'note' }, null]);
+    const rPlus = rows.length + 1; rows.push([{ v: 'Plus eller minus', s: 'b' }, { v: 'Faktisk inkomst minus utfall', s: 'note' }, null]);
+    const rKvar = rows.length + 1; rows.push([{ v: 'Kvar att spara enligt budget', s: 'b' }, { v: 'Planerad inkomst minus budget', s: 'note' }, null]);
+    rows.push([]);
+    rows.push([{ v: 'Kategori', s: 'head' }, { v: 'Vad som ingår', s: 'head' }, { v: 'Budget', s: 'headR' }, { v: 'Utfall', s: 'headR' }, { v: 'Kvar', s: 'headR' }, { v: 'Använt', s: 'headR' }]);
+    heights[rows.length - 1] = 22;
+    const groupRows = []; let tB = 0, tU = 0;
+    m.grupper.forEach((g) => {
+      if (!g.rader.length) return;
+      const gRow = rows.length + 1; const first = gRow + 1, last = gRow + g.rader.length;
+      const gb = g.rader.reduce((x, r) => x + r.budget, 0), gu = g.rader.reduce((x, r) => x + r.utfall, 0);
+      rows.push([{ v: g.namn, s: 'grp' }, { v: g.besk, s: 'grp' }, { f: `SUM(C${first}:C${last})`, v: gb, s: 'grpKr' }, { f: `SUM(D${first}:D${last})`, v: gu, s: 'grpKr' }, { f: `C${gRow}-D${gRow}`, v: gb - gu, s: 'grpKr' }, { v: '', s: 'grp' }]);
+      groupRows.push(gRow);
+      g.rader.forEach((r) => {
+        const rr = rows.length + 1;
+        rows.push([{ v: r.namn }, { v: r.besk, s: 'note' }, { v: r.budget, s: 'kr' }, { v: r.utfall, s: 'kr' }, { f: `C${rr}-D${rr}`, v: r.budget - r.utfall, s: r.budget - r.utfall < 0 ? 'krRed' : 'kr' }, { f: `IF(C${rr}>0,D${rr}/C${rr},"")`, v: r.budget > 0 ? r.utfall / r.budget : null, s: 'pct' }]);
+      });
+      tB += gb; tU += gu;
+    });
+    const rTot = rows.length + 1;
+    rows.push([{ v: 'Summa', s: 'bTot' }, { v: '', s: 'bTot' }, { f: groupRows.map((x) => 'C' + x).join('+') || '0', v: tB, s: 'krTot' }, { f: groupRows.map((x) => 'D' + x).join('+') || '0', v: tU, s: 'krTot' }, { f: `C${rTot}-D${rTot}`, v: tB - tU, s: 'krTot' }, { v: '', s: 'bTot' }]);
+    rows[rBud - 1][2] = { f: `C${rTot}`, v: tB, s: 'krBig' };
+    rows[rUtf - 1][2] = { f: `D${rTot}`, v: tU, s: 'krBig' };
+    rows[rPlus - 1][2] = { f: `C${rInc}-C${rUtf}`, v: m.innFakt - tU, s: 'krBig' };
+    rows[rKvar - 1][2] = { f: `C${rPlan}-C${rBud}`, v: m.innPlan - tB, s: 'krBig' };
+    if (m.b.oneoffs.length) {
+      rows.push([]); rows.push([{ v: 'Engångskostnader i budgeten', s: 'head' }, { v: '', s: 'head' }, { v: 'Belopp', s: 'headR' }]);
+      m.b.oneoffs.forEach((o) => rows.push([{ v: o.text || 'Utan namn' }, null, { v: +o.belopp || 0, s: 'kr' }]));
+    }
+    rows.push([]);
+    noter(cur).forEach((t) => { rows.push([{ v: t, s: 'sub' }]); merges.push(`A${rows.length}:F${rows.length}`); });
+    const shBudget = { name: 'Budget', cols: [30, 46, 15, 15, 15, 10], rows, merges, heights };
+
+    // Blad 2: Utfall per period
+    const lastP = pers.slice(-12);
+    const pr = [[{ v: 'Utfall per period', s: 'title' }], [{ v: 'Din ekonomi, de senaste perioderna. Belopp i kronor.', s: 'sub' }], []];
+    pr.push([{ v: 'Kategori', s: 'head' }, ...lastP.map((x) => ({ v: dShort(x.start), s: 'headR' })), { v: 'Snitt', s: 'headR' }]);
+    const sums = lastP.map((x) => sumPeriod(x.key, 'mitt'));
+    const C = XlsxW.colName, nP = lastP.length;
+    const incRow = pr.length + 1;
+    pr.push([{ v: 'Inkomst', s: 'b' }, ...sums.map((s) => ({ v: r0(s.inn), s: 'kr' })), { f: `AVERAGE(B${incRow}:${C(nP)}${incRow})`, v: sums.reduce((x, s) => x + s.inn, 0) / Math.max(1, nP), s: 'kr' }]);
+    const firstCat = pr.length + 1;
+    UT.forEach((c) => {
+      const vals = sums.map((s) => r0(-(s.sums[c.id] || 0)));
+      if (!vals.some((v) => v !== 0)) return;
+      const rr = pr.length + 1;
+      pr.push([{ v: c.namn }, ...vals.map((v) => ({ v, s: 'kr' })), { f: `AVERAGE(B${rr}:${C(nP)}${rr})`, v: vals.reduce((a, b2) => a + b2, 0) / Math.max(1, nP), s: 'kr' }]);
+    });
+    const lastCat = pr.length;
+    const totRow = pr.length + 1;
+    pr.push([{ v: 'Utgifter totalt', s: 'bTot' }, ...lastP.map((x, i) => (lastCat >= firstCat ? { f: `SUM(${C(i + 1)}${firstCat}:${C(i + 1)}${lastCat})`, v: sums[i].ut, s: 'krTot' } : { v: 0, s: 'krTot' })), { f: `AVERAGE(B${totRow}:${C(nP)}${totRow})`, v: sums.reduce((x, s) => x + s.ut, 0) / Math.max(1, nP), s: 'krTot' }]);
+    pr.push([{ v: 'Plus eller minus', s: 'b' }, ...lastP.map((x, i) => ({ f: `${C(i + 1)}${incRow}-${C(i + 1)}${totRow}`, v: sums[i].inn - sums[i].ut, s: 'kr' })), { f: `${C(nP + 1)}${incRow}-${C(nP + 1)}${totRow}`, v: sums.reduce((x, s) => x + s.inn - s.ut, 0) / Math.max(1, nP), s: 'kr' }]);
+    const shPer = { name: 'Utfall per period', cols: [28, ...lastP.map(() => 12), 12], rows: pr, merges: [`A1:${C(nP + 1)}1`, `A2:${C(nP + 1)}2`], heights: { 0: 30 }, landscape: true };
+
+    // Blad 3: Transaktioner
+    const lab = Object.fromEntries(pers.map((x) => [x.key, periodLabel(x)]));
+    const typNamn = { in: 'In', ut: 'Ut', neutral: 'Neutral' };
+    const tr = [[{ v: 'Datum', s: 'head' }, { v: 'Period', s: 'head' }, { v: 'Konto', s: 'head' }, { v: 'Text', s: 'head' }, { v: 'Belopp', s: 'headR' }, { v: 'Kategori', s: 'head' }, { v: 'Typ', s: 'head' }, { v: 'Ändrad', s: 'head' }]];
+    [...all].sort((a, b2) => a.datum.localeCompare(b2.datum)).forEach((t, i) => {
+      const c = K.CAT[t.kat] || { namn: t.kat, typ: 'ut' }; const z = i % 2 === 1;
+      tr.push([{ v: t.datum, date: true, s: z ? 'zebraDate' : 'date' }, { v: lab[t.period] || t.period, s: z ? 'zebra' : null }, { v: t.konto, s: z ? 'zebra' : null }, { v: t.text, s: z ? 'zebra' : null }, { v: t.belopp, s: z ? 'zebraBelopp' : 'belopp' }, { v: c.namn, s: z ? 'zebra' : null }, { v: typNamn[c.typ], s: z ? 'zebra' : null }, { v: t.manuell ? 'Ja' : '', s: z ? 'zebra' : null }]);
+    });
+    const shTx = { name: 'Transaktioner', cols: [12, 22, 22, 32, 13, 26, 9, 9], rows: tr, freeze: 1, filter: `A1:H${tr.length}`, grid: true, landscape: true };
+
+    // Blad 4: Regler
+    const rr2 = [[{ v: 'Text', s: 'head' }, { v: 'Kategori', s: 'head' }]];
+    state.regler.forEach((r) => rr2.push([{ v: r.nyckel ? `Börjar med ${r.nyckel}` : (r.exakt || r.s || r.r) }, { v: (K.CAT[r.c] || {}).namn || r.c }]));
+    const shRules = { name: 'Regler', cols: [40, 28], rows: rr2, freeze: 1 };
+
+    const bl = [...(state.buffert || [])].sort((a, c) => a.man.localeCompare(c.man));
+    const br = [[{ v: `Buffert, ${state.settings.bufNamn || 'buffertkonto'}`, s: 'title' }], [{ v: 'Saldo som du angett varje månad.', s: 'sub' }], [], [{ v: 'Månad', s: 'head' }, { v: 'Saldo', s: 'headR' }, { v: 'Förändring', s: 'headR' }]];
+    bl.forEach((x, i) => { const rn = br.length + 1; br.push([{ v: mLabel(x.man) }, { v: x.saldo, s: 'kr' }, i ? { f: `B${rn}-B${rn - 1}`, v: x.saldo - bl[i - 1].saldo, s: x.saldo - bl[i - 1].saldo < 0 ? 'krRed' : 'krGreen' } : { v: '', s: 'n' }]); });
+    const shBuf = { name: 'Buffert', cols: [18, 16, 16], rows: br, merges: ['A1:C1', 'A2:C2'], heights: { 0: 30 } };
+    const u8 = XlsxW.build(bl.length ? [shBudget, shPer, shBuf, shTx, shRules] : [shBudget, shPer, shTx, shRules]);
+    saveFile(`Kassabok ${fileStamp(cur)}.xlsx`, u8, 'Excel-filen är sparad');
+  });
+
+  // ---------- Import och konton ----------
+  $('file').addEventListener('change', async (e) => {
+    const files = [...e.target.files]; const log = $('log'); log.textContent = '';
+    let any = false;
+    for (const f of files) {
+      const line = el('div', null, `${f.name}: läser…`); log.appendChild(line);
+      try {
+        if (f.size > 20e6) throw new Error('filen är för stor');
+        const rows = /\.csv$/i.test(f.name) ? K.readCsv(await f.text()) : await K.readXlsx(await f.arrayBuffer());
+        const r = K.parseBankRows(rows);
+        if (r.typ === 'utforda') { line.textContent = `${f.name}: Utförda transaktioner hoppas över, de finns redan i kontoutdragen.`; continue; }
+        if (r.typ !== 'konto') { line.textContent = `${f.name}: Känner inte igen formatet. Exportera kontoutdraget som Excel från Handelsbanken.`; continue; }
+        const konto = state.alias[r.konto] || r.konto;
+        let ny = 0, dup = 0; const occ = new Map();
+        r.tx.forEach((t) => {
+          const base = K.txId(konto, t); const n = (occ.get(base) || 0) + 1; occ.set(base, n);
+          const id = n > 1 ? `${base}#${n}` : base;
+          if (state.tx[id]) dup++; else { state.tx[id] = { ...t, id, konto }; ny++; }
+        });
+        const ds = r.tx.map((t) => t.datum).sort();
+        if (!state.konton[konto]) state.konton[konto] = { typ: /gemensam/i.test(konto) ? 'gemensamt' : (/spar/i.test(konto) ? 'spar' : 'mitt') };
+        state.imports.push({ konto, fran: ds[0] || null, till: ds[ds.length - 1] || null, rader: r.rader, datum: today() });
+        any = true;
+        line.textContent = `${konto}${ds.length ? ` (${ds[0]} till ${ds[ds.length - 1]})` : ''}: ${ny} nya, ${dup} fanns redan${r.prel ? `, ${r.prel} preliminära väntar tills de är bokförda` : ''}${r.fel ? `, ${r.fel} rader gick inte att läsa` : ''}.`;
+        if (r.rader >= 1000) { const w = el('div', 'warn', `Exporten har ${r.rader} rader och är troligen avkapad av banken. Ta ut den äldre delen som en egen fil.`); log.appendChild(w); }
+      } catch (err) { line.textContent = `${f.name}: Kunde inte läsas (${err.message}).`; }
+    }
+    if (any) { state.valdPeriod = null; if (!save()) return; }
+    e.target.value = ''; refresh();
+  });
+  function coverage(n) {
+    const ds = all.filter((t) => t.konto === n).map((t) => t.datum).sort();
+    if (!ds.length) return { text: 'Inga poster', gaps: [] };
+    const gaps = [];
+    for (let i = 1; i < ds.length; i++) if (daysBetween(ds[i - 1], ds[i]) > 25) gaps.push([ds[i - 1], ds[i]]);
+    const imp = state.imports.filter((x) => x.konto === n).sort((a, c) => a.datum.localeCompare(c.datum));
+    const last = imp[imp.length - 1];
+    return { text: `${ds.length} poster, ${ds[0]} till ${ds[ds.length - 1]}${last ? `. Senast inläst ${last.datum}` : ''}.`, gaps, capped: imp.some((x) => x.rader >= 1000) };
+  }
+  function mergeAccount(from, to) {
+    Object.values(state.tx).filter((t) => t.konto === from).forEach((t) => {
+      const base = K.txId(to, t); let id = base, n = 1;
+      while (state.tx[id] && state.tx[id].konto === to && !(state.tx[id].datum === t.datum && state.tx[id].belopp === t.belopp && state.tx[id].text === t.text)) { n++; id = `${base}#${n}`; }
+      const dupe = !!state.tx[id];
+      if (!dupe) state.tx[id] = { ...t, id, konto: to };
+      if (state.overrides[t.id]) { if (!dupe) state.overrides[id] = state.overrides[t.id]; delete state.overrides[t.id]; }
+      delete state.tx[t.id];
+    });
+    delete state.konton[from]; state.alias[from] = to;
+    state.imports.forEach((x) => { if (x.konto === from) x.konto = to; });
+  }
+  function renderAccounts() {
+    const w = $('accList'); w.textContent = '';
+    const names = Object.keys(state.konton).sort();
+    if (!names.length) { w.appendChild(el('p', 'hint', 'Inga konton än.')); return; }
+    names.forEach((n) => {
+      const r = el('div', 'acc');
+      const cv = coverage(n);
+      const l = el('div'); l.appendChild(el('div', 'an', n)); l.appendChild(el('div', 'h', cv.text));
+      cv.gaps.slice(0, 3).forEach(([a2, b2]) => l.appendChild(el('div', 'h warn', `Möjlig lucka: inga poster mellan ${a2} och ${b2}.`)));
+      if (cv.capped) l.appendChild(el('div', 'h warn', 'Minst en export hade 1 000 rader och kan vara avkapad.'));
+      const right = el('div', 'accr');
+      const s = el('select'); s.setAttribute('aria-label', 'Kontotyp ' + n);
+      [['mitt', 'Mitt konto'], ['gemensamt', 'Gemensamt'], ['spar', 'Sparkonto']].forEach(([v, t]) => s.appendChild(new Option(t, v)));
+      s.value = state.konton[n].typ;
+      s.addEventListener('change', () => { state.konton[n].typ = s.value; save(); refresh(); });
+      right.appendChild(s);
+      const others = names.filter((x) => x !== n);
+      if (others.length) {
+        const m = el('select'); m.setAttribute('aria-label', 'Slå ihop ' + n + ' med');
+        m.appendChild(new Option('Slå ihop med…', ''));
+        others.forEach((x) => m.appendChild(new Option(x, x)));
+        const cb = el('button', 'btn small danger', ''); cb.type = 'button'; cb.hidden = true;
+        m.addEventListener('change', () => { cb.hidden = !m.value; cb.textContent = `Flytta alla poster till ${m.value}`; });
+        cb.addEventListener('click', () => { const to = m.value; if (!to) return; mergeAccount(n, to); if (save()) toast(`${n} är ihopslaget med ${to}. Framtida importer med det namnet hamnar där.`); refresh(); });
+        right.appendChild(m); right.appendChild(cb);
+      }
+      r.append(l, right); w.appendChild(r);
+    });
+  }
+  $('saveBackup').addEventListener('click', () => saveFile(`Kassabok säkerhetskopia ${today()}.json`, JSON.stringify(state), 'Säkerhetskopian är sparad'));
+  $('errBackup') && $('errBackup').addEventListener('click', () => saveFile(`Kassabok säkerhetskopia ${today()}.json`, JSON.stringify(state), 'Säkerhetskopian är sparad'));
+  $('loadBackupFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    let cand;
+    try {
+      if (f.size > 30e6) throw new Error('Filen är för stor');
+      cand = normalize(JSON.parse(await f.text()));
+      const t = K.process(cand); K.periods(t, cand.settings); // provberäkning
+    } catch (err) { toast(`Filen kunde inte läsas in: ${err.message || 'ogiltig säkerhetskopia'}. Inget har ändrats.`); return; }
+    const prev = state;
+    try { localStorage.setItem(KEY + '.foregaende', JSON.stringify(prev)); } catch (er) { /* plats saknas */ }
+    state = cand;
+    if (!save()) { state = prev; toast('Kunde inte spara säkerhetskopian. Din tidigare data är kvar.'); return; }
+    refresh(); toast(`Säkerhetskopian är inläst, ${Object.keys(state.tx).length} poster.`);
+  });
+  $('loadRulesFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try {
+      const j = JSON.parse(await f.text());
+      const list = normalize({ tx: {}, regler: Array.isArray(j) ? j : j.regler }).regler;
+      if (!list.length) throw new Error('inga giltiga regler');
+      const key = (r) => (r.nyckel ? 'n:' + K.keyText(r.nyckel) : 'e:' + r.exakt.toLowerCase());
+      const have = new Set(state.regler.map(key)); let n = 0;
+      list.forEach((r) => { if (!have.has(key(r))) { state.regler.push(r); have.add(key(r)); n++; } });
+      if (save()) { refresh(); toast(`${n} regler inlästa`); }
+    } catch (err) { toast(`Reglerna kunde inte läsas: ${err.message}`); }
+  });
+  let wipeArmed = false;
+  $('wipe').addEventListener('click', () => {
+    if (!wipeArmed) { wipeArmed = true; $('wipe').textContent = 'Tryck igen för att radera allt'; setTimeout(() => { wipeArmed = false; $('wipe').textContent = 'Radera all data'; }, 4000); return; }
+    try { localStorage.setItem(KEY + '.foregaende', JSON.stringify(state)); } catch (er) { /* plats saknas */ }
+    state = defaults(); save(); wipeArmed = false; $('wipe').textContent = 'Radera all data'; refresh(); toast('All data är raderad');
+  });
+
+
+  // ---------- Navigering ----------
+  const TABS = ['oversikt', 'sortera', 'budget', 'ar', 'gemensamt', 'konton'];
+  function currentTab() { const h = (location.hash || '').replace('#', ''); return TABS.includes(h) ? h : 'oversikt'; }
+  function route() {
+    const tab = currentTab();
+    TABS.forEach((t) => { $(t).hidden = t !== tab; });
+    document.querySelectorAll('nav.tabs a').forEach((a) => { if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    renderTab(tab);
+    window.scrollTo(0, 0);
+  }
+  function renderTab(tab) {
+    if (tab === 'oversikt') renderOverview();
+    if (tab === 'sortera') { renderSort(); renderTx(); }
+    if (tab === 'budget') renderBudget();
+    if (tab === 'ar') renderYear();
+    if (tab === 'gemensamt') renderJoint();
+  }
+  window.addEventListener('hashchange', route);
+  $('period').addEventListener('change', (e) => { state.valdPeriod = e.target.value; cur = e.target.value; save(); renderAll(); });
+
+  function renderAll() {
+    renderPeriods(); fillFilters(); renderAccounts(); renderRules();
+    const n = all.filter((t) => t.period === cur && needsReview(t)).length;
+    const badge = $('unkBadge'); badge.textContent = ''; if (n) badge.appendChild(el('span', 'badge', String(n)));
+    renderTab(currentTab());
+  }
+  function refresh() { const y = window.scrollY; recompute(); renderAll(); window.scrollTo(0, y); }
+
+  if (migrated) save();
+  if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.serviceWorker.register('sw.js').catch(() => {}); }
+  if (navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(() => {}); }
+  refresh(); route();
+  if (loadError) toast(`Sparad data kunde inte läsas (${loadError}). En kopia finns kvar i webbläsaren.`);
+})();
+
+</script>
+</body>
+</html>
