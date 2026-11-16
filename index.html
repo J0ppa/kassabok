@@ -340,6 +340,13 @@ nav.tabs .badge { background: #8A4F00; color: #FFFFFF; }
 nav.tabs .in { grid-template-columns: repeat(6, 1fr); }
 nav.tabs a { font-size: 10.5px; padding-left: 0; padding-right: 0; }
 nav.tabs a svg { width: 21px; height: 21px; }
+
+/* v7 */
+[hidden] { display: none !important; }
+fieldset.modes { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 10px; margin: 0 0 10px; display: flex; flex-direction: column; gap: 8px; }
+fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
+.newcat { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 0 0 10px; padding: 10px; border: 1px dashed var(--line); border-radius: 12px; }
+.newcat input, .newcat select { width: 100%; }
 </style>
 </head>
 <body>
@@ -385,7 +392,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
       </div>
       <h3 class="c-rorlig">Kuvert</h3>
       <p class="hint">Tryck på en grupp för att se kuverten.</p>
-      <label class="check" style="margin:0 0 6px"><input type="checkbox" id="ovFordela"><span>Fördela överföringen till gemensamt på boende, mat och övrigt. Summan ändras inte.</span></label>
+      <label class="check" style="margin:0 0 6px"><input type="checkbox" id="ovFordela"><span>Fördela överföringen till gemensamt på boende, mat och övrigt. Summan ändras inte, och budgeten följer samma val.</span></label>
       <div id="groups"></div>
       <details class="help" style="margin-top:16px">
         <summary>Hur läser jag översikten?</summary>
@@ -410,6 +417,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
       <button type="button" data-sscope="alla" aria-pressed="false">Alla perioder</button>
     </div>
     <h3 class="c-ovr">Att sortera</h3>
+    <label class="check" style="margin:0 0 10px"><input type="checkbox" id="sRegel" checked><span>Skapa regel när jag sorterar, så samma butik hamnar rätt nästa gång</span></label>
     <div class="sortlist" id="sortList"></div>
     <details class="help" style="margin-top:14px">
       <summary>Så lär sig appen</summary>
@@ -417,7 +425,8 @@ nav.tabs a svg { width: 21px; height: 21px; }
         <li>När du väljer kategori skapas en regel för texten, till exempel att allt som börjar med ICA NARA blir Mat. Nästa gång sorteras den automatiskt.</li>
         <li>Klarna, Svea och liknande får ingen regel, eftersom samma betalsätt används till olika köp.</li>
         <li><b>Stämmer</b> godkänner appens gissning.</li>
-        <li><b>Annat</b> öppnar alla kategorier, där du också kan ändra vad regeln ska gälla.</li>
+        <li><b>Annat</b> öppnar alla kategorier. Där kan du skapa en egen kategori, ändra vad regeln ska gälla eller välja att butiken ska frågas om varje gång.</li>
+        <li>Snabbknapparna visar de kategorier du använt senast.</li>
         <li>Dina regler ser och tar du bort under Importera.</li>
       </ul>
     </details>
@@ -440,13 +449,14 @@ nav.tabs a svg { width: 21px; height: 21px; }
     <h2>Budget och utfall</h2>
     <div class="strip" id="bStrip"></div>
     <p class="hint" id="bOrigin"></p>
+    <p class="hint" id="bFordelat"></p>
     <label class="check" style="margin:0 0 12px"><input type="checkbox" id="bCmp"><span>Visa beskrivningar, rekommenderat och förra perioden</span></label>
     <details class="help">
       <summary>Så använder du budgeten</summary>
       <ol>
         <li>Kontrollera <b>Inkomst</b>. Den fylls i med det som kommit in i perioden.</li>
         <li>Skriv belopp per kategori. Under varje rad ser du utfallet hittills och vad som är kvar.</li>
-        <li>Rekommenderat för Gemensamt konto är snittet av dina tre senaste perioders överföringar.</li>
+        <li>Rekommenderat är snittet av dina tre senaste perioder. Shopping, restaurang och liknande får högst ett målvärde.</li>
         <li>Lägg till planerade större köp under <b>Engångskostnader</b>.</li>
         <li>Spara perioden som PDF eller Excel längst ner. Allt du skriver sparas direkt.</li>
       </ol>
@@ -573,6 +583,9 @@ nav.tabs a svg { width: 21px; height: 21px; }
       <div class="set"><label for="sNamn">Ditt förnamn<span class="h">poster som börjar med ditt namn föreslås som överföring till eget konto</span></label><input type="text" id="sNamn" autocomplete="off"></div>
     </div>
 
+    <h3>Egna kategorier</h3>
+    <div class="panel" id="customList"></div>
+
     <h3>Dina regler</h3>
     <p class="hint">Skapas när du sorterar poster. Du kan också läsa in regler från en fil, de läggs till dina befintliga.</p>
     <div class="panel" id="ruleList"></div>
@@ -607,7 +620,19 @@ nav.tabs a svg { width: 21px; height: 21px; }
     <div class="m" id="sheetMeta"></div>
     <div class="cat-grid" id="sheetCats"></div>
     <div class="cat-desc" id="sheetDesc"></div>
-    <label class="check"><input type="checkbox" id="sheetRemember"><span id="sheetRememberText">Kom ihåg till nästa gång</span></label>
+    <div class="btns" style="margin:0 0 8px"><button type="button" class="btn small" id="newCatBtn">Ny kategori</button></div>
+    <div class="newcat" id="newCatBox" hidden>
+      <input type="text" id="newCatName" placeholder="Namn, till exempel Fiske" aria-label="Namn på ny kategori" autocomplete="off">
+      <select id="newCatGrp" aria-label="Typ av kostnad"><option value="rorlig">Rörlig kostnad</option><option value="fast">Fast kostnad</option></select>
+      <button type="button" class="btn small primary" id="newCatAdd">Skapa</button>
+    </div>
+    <fieldset class="modes">
+      <legend>Nästa gång samma butik dyker upp</legend>
+      <label class="check"><input type="radio" name="sheetMode" value="regel"><span>Sortera likadant automatiskt</span></label>
+      <label class="check"><input type="radio" name="sheetMode" value="post"><span>Gäller bara den här posten</span></label>
+      <label class="check"><input type="radio" name="sheetMode" value="fraga"><span>Fråga mig varje gång, butiken har olika sorters köp</span></label>
+      <div class="hint" id="sheetModeHint" style="margin:4px 0 0"></div>
+    </fieldset>
     <div class="keyrow" id="sheetKeyRow"><label for="sheetKey">Gäller alla poster som börjar med</label><input type="text" id="sheetKey" autocomplete="off"><div class="hint" id="sheetAffected" style="margin:2px 0 0"></div></div>
     <div class="actions">
       <button type="button" class="btn" id="sheetReset">Appens förslag</button>
@@ -639,13 +664,17 @@ nav.tabs a svg { width: 21px; height: 21px; }
     { id: 'traning', namn: 'Träning', typ: 'ut', grupp: 'fast', rek: 580, besk: 'Gym och träningstjänster.' },
     { id: 'krediter', namn: 'Krediter och avbetalningar', typ: 'ut', grupp: 'fast', rek: 0, besk: 'Lån och avbetalningar utöver bilarna.' },
     { id: 'mat', namn: 'Mat', typ: 'ut', grupp: 'rorlig', rek: 3000, besk: 'Livsmedel och Systembolaget.' },
-    { id: 'restaurang', namn: 'Restaurang och snabbmat', typ: 'ut', grupp: 'rorlig', rek: 1000, besk: 'Restaurang, snabbmat, kafé och hämtmat.' },
-    { id: 'shopping', namn: 'Kläder och shopping', typ: 'ut', grupp: 'rorlig', rek: 2500, besk: 'Kläder, elektronik, hem och annat du köper.' },
+    { id: 'restaurang', namn: 'Restaurang och snabbmat', typ: 'ut', grupp: 'rorlig', rek: 1000, tak: true, besk: 'Restaurang, snabbmat, kafé och hämtmat.' },
+    { id: 'smakop', namn: 'Småköp', typ: 'ut', grupp: 'rorlig', rek: 500, tak: true, besk: 'Kiosk, dricka, snacks, proteinbar och annat i farten.' },
+    { id: 'snus', namn: 'Snus och tobak', typ: 'ut', grupp: 'rorlig', rek: 0, besk: 'Snus, tobak och liknande.' },
+    { id: 'shopping', namn: 'Kläder och shopping', typ: 'ut', grupp: 'rorlig', rek: 2500, tak: true, besk: 'Kläder, elektronik och annat du köper.' },
+    { id: 'hem', namn: 'Hem och hushåll', typ: 'ut', grupp: 'rorlig', rek: 500, tak: true, besk: 'Inredning, verktyg, trädgård och saker till hemmet.' },
+    { id: 'presenter', namn: 'Presenter', typ: 'ut', grupp: 'rorlig', rek: 300, tak: true, besk: 'Presenter och gåvor.' },
     { id: 'barn', namn: 'Barn', typ: 'ut', grupp: 'rorlig', rek: 500, besk: 'Barnkläder, leksaker och barnartiklar.' },
     { id: 'halsa', namn: 'Hälsa', typ: 'ut', grupp: 'rorlig', rek: 800, besk: 'Apotek, tandvård och vård.' },
-    { id: 'noje', namn: 'Nöje', typ: 'ut', grupp: 'rorlig', rek: 800, besk: 'Utflykter, nöjesparker, bio och resor.' },
-    { id: 'swish', namn: 'Swish privat', typ: 'ut', grupp: 'rorlig', rek: 1000, besk: 'Swish till privatpersoner.' },
-    { id: 'ovrigt', namn: 'Övrigt', typ: 'ut', grupp: 'rorlig', rek: 500, besk: 'Avgifter, föreningar och sådant som inte passar någon annanstans.' },
+    { id: 'noje', namn: 'Nöje', typ: 'ut', grupp: 'rorlig', rek: 800, tak: true, besk: 'Utflykter, nöjesparker, bio och resor.' },
+    { id: 'swish', namn: 'Swish privat', typ: 'ut', grupp: 'rorlig', rek: 1000, tak: true, besk: 'Swish till privatpersoner.' },
+    { id: 'ovrigt', namn: 'Övrigt', typ: 'ut', grupp: 'rorlig', rek: 500, tak: true, besk: 'Avgifter, föreningar och sådant som inte passar någon annanstans.' },
     { id: 'engang', namn: 'Engångskostnader', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Planerade större köp. Lägg in dem som egna rader under Budget.' },
     { id: 'spel', namn: 'Spel', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Spel och betting, netto.' },
     { id: 'okant', namn: 'Okänt', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Poster som behöver sorteras. Tryck på dem under Poster.' },
@@ -658,6 +687,16 @@ nav.tabs a svg { width: 21px; height: 21px; }
     { id: 'ovr', namn: 'Engångs, spel och osorterat', besk: 'Planerade köp, spel och poster som väntar på kategori.' },
   ];
   const CAT = Object.fromEntries(CATS.map((c) => [c.id, c]));
+  // Egna kategorier läggs sist bland utgifterna i sin grupp
+  function setCustom(list) {
+    for (let i = CATS.length - 1; i >= 0; i--) if (CATS[i].egen) { delete CAT[CATS[i].id]; CATS.splice(i, 1); }
+    (list || []).forEach((c) => {
+      if (!c || typeof c.id !== 'string' || !/^x_[a-z0-9_]{1,40}$/.test(c.id) || CAT[c.id] || typeof c.namn !== 'string' || !c.namn.trim()) return;
+      const cat = { id: c.id, namn: c.namn.trim().slice(0, 40), typ: 'ut', grupp: c.grupp === 'fast' ? 'fast' : 'rorlig', rek: 0, besk: 'Egen kategori.', egen: true };
+      const at = CATS.findIndex((x) => x.id === 'engang');
+      CATS.splice(at, 0, cat); CAT[cat.id] = cat;
+    });
+  }
 
   // Regler: s = delsträng (skiftlägesokänslig), r = reguljärt uttryck. Första träff vinner.
   const SEED_RULES = [
@@ -691,7 +730,10 @@ nav.tabs a svg { width: 21px; height: 21px; }
     // Träning
     ...['FITNESS', 'NORDIC WELLNESS', 'SATS', 'SPORTADMIN'].map((s) => ({ s, c: 'traning' })),
     // Shopping
-    ...['ZALANDO', 'ADIDAS', 'JACKJONES', 'LINDEX', 'STADIUM', 'JACKS SPORT', 'NETONNET', 'ELGIGANTEN', 'JULA', 'RUSTA', 'CLAS', 'KJELL', 'IKEA', 'XXXLUTZ', 'BAUHAUS', 'NOTINO', 'AHLENS', 'ÅHLENS', 'KAPPAHL', 'HM ONLINE', 'H&M', 'BOOZT', 'AMAZON', 'TRADERA', 'BLOCKET', 'DOLLARSTORE', 'JEM FIX', 'GLIMRA', 'AKADEMIBOK', 'ADLIBRIS', 'BOKHANDEL', 'CARDLAND', 'MICHAELKOR'].map((s) => ({ s, c: 'shopping' })),
+    ...['JULA', 'RUSTA', 'CLAS', 'IKEA', 'XXXLUTZ', 'BAUHAUS', 'JEM FIX', 'HORNBACH', 'BYGGMAX', 'JYSK', 'DOLLARSTORE', 'PLANTAGEN', 'BLOMSTERLANDET'].map((s) => ({ s, c: 'hem' })),
+    ...['TOBAK', 'SNUS'].map((s) => ({ s, c: 'snus' })),
+    ...['PRESSBYR', '7-ELEVEN', 'SELECTA', 'HAPPYCANDY', 'HEMMAKV', 'GODIS'].map((s) => ({ s, c: 'smakop' })),
+    ...['ZALANDO', 'ADIDAS', 'JACKJONES', 'LINDEX', 'STADIUM', 'JACKS SPORT', 'NETONNET', 'ELGIGANTEN', 'KJELL', 'NOTINO', 'AHLENS', 'ÅHLENS', 'KAPPAHL', 'HM ONLINE', 'H&M', 'BOOZT', 'AMAZON', 'TRADERA', 'BLOCKET', 'GLIMRA', 'AKADEMIBOK', 'ADLIBRIS', 'BOKHANDEL', 'CARDLAND', 'MICHAELKOR'].map((s) => ({ s, c: 'shopping' })),
     // Nöje
     ...['LEGOLAND', 'LALANDIA', 'BAKKEN', 'TIVOLI', 'BIO', 'UBER', 'UBR*', 'TROPIKARIET', 'RIDETICKET'].map((s) => ({ s, c: 'noje' })),
     // Abonnemang
@@ -739,7 +781,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
   }
 
   function classify(text, userRules) {
-    for (const r of userRules) if (ruleMatches(r, text)) return { c: r.c, kalla: 'din regel' };
+    for (const r of userRules) if (ruleMatches(r, text)) return r.fraga ? { c: 'okant', kalla: 'fråga', nyckel: r.nyckel } : { c: r.c, kalla: 'din regel' };
     for (const r of SEED_RULES) if (ruleMatches(r, text)) return { c: r.c, kalla: r.betalsatt ? 'betalsätt' : 'regel' };
     const h = heuristic(text);
     return { c: h, kalla: h === 'okant' ? 'okänt' : 'gissning' };
@@ -934,7 +976,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
       const k = classify(t.text, state.regler || []);
       // Förnamn: bara ett förslag om överföring, granskas i Sortera om det inte paras
       if (namn && k.kalla !== 'din regel' && (k.c === 'swish' || k.c === 'okant') && t.text.toLowerCase().startsWith(namn + ' ')) { k.c = 'sparande'; k.kalla = 'gissning'; }
-      t.auto = k.c; t.kalla = k.kalla;
+      t.auto = k.c; t.kalla = k.kalla; if (k.nyckel) t.nyckel = k.nyckel;
       t.kat = o || k.c;
       t.manuell = !!o;
       t.kontotyp = (acc[t.konto] && acc[t.konto].typ) || 'mitt';
@@ -1032,7 +1074,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
     return { sums, inn, ut, kvar: inn - ut };
   }
 
-  G.Kassabok = { inScope, periodId, CATS, CAT, GRUPPER, SEED_RULES, classify, keyText, suggestKey, summarizeTx, readXlsx, readCsv, parseBankRows, txId, process, periods, summarize, norm, addDays };
+  G.Kassabok = { setCustom, inScope, periodId, CATS, CAT, GRUPPER, SEED_RULES, classify, keyText, suggestKey, summarizeTx, readXlsx, readCsv, parseBankRows, txId, process, periods, summarize, norm, addDays };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -1373,19 +1415,20 @@ nav.tabs a svg { width: 21px; height: 21px; }
   const mLabel = (ym) => { const [y, m] = ym.split('-'); return `${MAN[+m - 1]} ${y}`; };
   const today = () => new Date().toISOString().slice(0, 10);
   const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
-  const UT = K.CATS.filter((c) => c.typ === 'ut');
+  let UT = K.CATS.filter((c) => c.typ === 'ut');
+  function refreshCats() { K.setCustom(state.egna || []); UT = K.CATS.filter((c) => c.typ === 'ut'); }
   const SAKER = ['regel', 'din regel', 'eget namn'];
-  const QUICK = ['mat', 'shopping', 'halsa', 'restaurang', 'swish', 'noje', 'bil', 'barn'];
+  const QUICK = ['mat', 'smakop', 'shopping', 'halsa', 'restaurang', 'swish', 'snus', 'bil', 'hem', 'noje', 'barn'];
   const QUICK_IN = ['lon', 'ovrig_inkomst', 'swish', 'sparande', 'shopping', 'halsa'];
 
   function defaults() {
     return {
       tx: {}, overrides: {}, regler: [], konton: {}, budgets: {}, scope: 'mitt', valdPeriod: null,
       settings: { minLon: 10000, startdag: 25, egetNamn: '', bufNamn: 'Buffertkonto' },
-      ui: { sscope: 'period', ymode: 'lon', yscope: 'mitt', fordela: false }, buffert: [], alias: {}, imports: [], schema: 3,
+      ui: { sscope: 'period', ymode: 'lon', yscope: 'mitt', fordela: true, regelVidSort: true, senaste: [], butik: {} }, buffert: [], alias: {}, imports: [], egna: [], schema: 4,
     };
   }
-  const SCHEMA = 3;
+  const SCHEMA = 4;
   // Validera och migrera sparad data. Kastar fel om datan inte går att använda.
   function normalize(s) {
     if (!s || typeof s !== 'object' || Array.isArray(s)) throw new Error('Ingen giltig data');
@@ -1393,6 +1436,8 @@ nav.tabs a svg { width: 21px; height: 21px; }
     const d = defaults();
     const out = Object.assign(defaults(), s);
     if (!out.tx || typeof out.tx !== 'object' || Array.isArray(out.tx)) throw new Error('Transaktioner saknas');
+    out.egna = (Array.isArray(out.egna) ? out.egna : []).filter((c) => c && /^x_[a-z0-9_]{1,40}$/.test(c.id || '') && typeof c.namn === 'string' && c.namn.trim()).map((c) => ({ id: c.id, namn: c.namn.trim().slice(0, 40), grupp: c.grupp === 'fast' ? 'fast' : 'rorlig' }));
+    K.setCustom(out.egna);
     const tx = {};
     Object.values(out.tx).forEach((t) => {
       if (!t || typeof t !== 'object') return;
@@ -1416,7 +1461,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
     if (Array.isArray(out.imports)) out.imports.forEach((x) => { if (x && typeof x.konto === 'string') x.konto = cleanK(x.konto); });
     out.tx = tx;
     out.overrides = Object.fromEntries(Object.entries(out.overrides && typeof out.overrides === 'object' ? out.overrides : {}).filter(([k, v]) => tx[k] && K.CAT[v]));
-    out.regler = (Array.isArray(out.regler) ? out.regler : []).filter((r) => r && K.CAT[r.c] && (typeof r.nyckel === 'string' || typeof r.exakt === 'string')).map((r) => (r.nyckel ? { nyckel: r.nyckel.slice(0, 80), c: r.c } : { exakt: r.exakt.slice(0, 120), c: r.c }));
+    out.regler = (Array.isArray(out.regler) ? out.regler : []).filter((r) => r && ((r.fraga && typeof r.nyckel === 'string') || (K.CAT[r.c] && (typeof r.nyckel === 'string' || typeof r.exakt === 'string')))).map((r) => (r.fraga ? { nyckel: r.nyckel.slice(0, 80), fraga: true } : (r.nyckel ? { nyckel: r.nyckel.slice(0, 80), c: r.c } : { exakt: r.exakt.slice(0, 120), c: r.c })));
     out.konton = out.konton && typeof out.konton === 'object' ? out.konton : {};
     Object.keys(out.konton).forEach((k) => { if (!['mitt', 'gemensamt', 'spar'].includes((out.konton[k] || {}).typ)) out.konton[k] = { typ: 'mitt' }; });
     out.alias = out.alias && typeof out.alias === 'object' ? out.alias : {};
@@ -1436,6 +1481,9 @@ nav.tabs a svg { width: 21px; height: 21px; }
     out.budgets = bud;
     if (out.scope !== 'mitt') out.scope = 'mitt';
     if (out.ui.yscope !== 'gemensamt') out.ui.yscope = 'mitt';
+    if (!s.schema || s.schema < 4) out.ui.fordela = true;
+    out.ui.senaste = (Array.isArray(out.ui.senaste) ? out.ui.senaste : []).filter((c) => K.CAT[c]).slice(0, 8);
+    if (!out.ui.butik || typeof out.ui.butik !== 'object') out.ui.butik = {};
     out.schema = SCHEMA;
     return out;
   }
@@ -1467,6 +1515,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
 
   let all = [], pers = [], cur = null;
   function recompute() {
+    refreshCats();
     all = K.process(state);
     pers = K.periods(all, state.settings);
     const keys = pers.map((p) => p.key);
@@ -1537,7 +1586,23 @@ nav.tabs a svg { width: 21px; height: 21px; }
   }
 
   // ---------- Budget och rekommendationer ----------
-  function rekFor(c, k) { return c.id === 'gemensamt' ? transferAvg(k) : (c.rek || 0); }
+  // Rekommenderat: snittet av de tre senaste perioderna. Kategorier med tak (shopping, restaurang m.fl.) får högst sitt målvärde.
+  let avgCache = { key: null, map: null };
+  function avgMap(k) {
+    const sig = k + '|' + (state.ui.fordela ? 1 : 0) + '|' + all.length + '|' + Object.keys(state.overrides).length + '|' + state.regler.length;
+    if (avgCache.key === sig) return avgCache.map;
+    const prev = pers.filter((p) => p.key < k).slice(-3);
+    let map = null;
+    if (prev.length) { map = {}; const ss = prev.map((p) => sumPeriod(p.key, 'mitt')); UT.forEach((c) => { map[c.id] = Math.max(0, Math.round(ss.reduce((x, s) => x - (s.sums[c.id] || 0), 0) / ss.length / 100) * 100); }); }
+    avgCache = { key: sig, map }; return map;
+  }
+  function rekFor(c, k) {
+    if (c.id === 'gemensamt') return state.ui.fordela ? 0 : transferAvg(k);
+    if (['spel', 'okant', 'engang', 'krediter'].includes(c.id)) return 0;
+    const m = k ? avgMap(k) : null;
+    if (!m) return c.rek || 0;
+    return c.tak ? Math.min(m[c.id], c.rek || 0) : m[c.id];
+  }
   function rekBudget(k) { const cats = {}; UT.forEach((c) => { if (c.id !== 'engang') cats[c.id] = rekFor(c, k); }); return { inc: null, cats, oneoffs: [] }; }
   function budgetFor(k, create) {
     if (!k) return rekBudget(k);
@@ -1550,8 +1615,8 @@ nav.tabs a svg { width: 21px; height: 21px; }
     return b;
   }
   const oneoffSum = (b) => b.oneoffs.reduce((s, o) => s + (+o.belopp || 0), 0);
-  function budgetTotal(b) { return Object.values(b.cats).reduce((s, v) => s + (+v || 0), 0) + oneoffSum(b); }
-  function catBudget(b, id) { return id === 'engang' ? oneoffSum(b) : (+b.cats[id] || 0); }
+  function catBudget(b, id) { if (id === 'engang') return oneoffSum(b); if (id === 'gemensamt' && state.ui.fordela) return 0; return +b.cats[id] || 0; }
+  function budgetTotal(b) { return UT.reduce((s, c) => s + catBudget(b, c.id), 0); }
   function autoIncome(k) {
     const s = k ? K.summarize(all, k, 'mitt') : null;
     if (s && s.inn > 0) return s.inn;
@@ -1585,23 +1650,33 @@ nav.tabs a svg { width: 21px; height: 21px; }
   // ---------- Sortering och regler ----------
   function needsReview(t) { return !t.manuell && t.kat !== 'intern' && (t.kat === 'okant' || t.kalla === 'gissning'); }
   function affected(key) { const k = K.keyText(key); if (!k) return 0; return all.filter((x) => !x.manuell && (K.keyText(x.text) === k || K.keyText(x.text).startsWith(k + ' '))).length; }
-  function assign(t, cat, remember, key) {
-    const snap = JSON.stringify({ regler: state.regler, overrides: state.overrides });
+  // mode: 'regel' = kom ihåg för butiken, 'post' = bara den här posten, 'fraga' = fråga alltid för butiken
+  function assign(t, cat, mode, key) {
+    if (mode === true) mode = 'regel'; if (!mode) mode = 'post';
+    const snap = JSON.stringify({ regler: state.regler, overrides: state.overrides, senaste: state.ui.senaste, butik: state.ui.butik });
     let msg;
     state.overrides[t.id] = cat;
-    if (remember && key && t.kalla !== 'betalsätt') {
-      const k = K.keyText(key); const n = affected(k);
-      state.regler = state.regler.filter((r) => !(r.nyckel && K.keyText(r.nyckel) === k) && !(r.exakt && K.keyText(r.exakt) === k));
+    const k = K.keyText(key || '');
+    if (mode !== 'post' && k) state.regler = state.regler.filter((r) => !(r.nyckel && K.keyText(r.nyckel) === k) && !(r.exakt && K.keyText(r.exakt) === k));
+    if (mode === 'regel' && k) {
+      const n = affected(k);
       state.regler.unshift({ nyckel: k, c: cat });
       msg = `${K.CAT[cat].namn}. Regeln ”${k}” gäller ${n} ${n === 1 ? 'post' : 'poster'}.`;
+    } else if (mode === 'fraga' && k) {
+      state.regler.unshift({ nyckel: k, fraga: true });
+      msg = `${K.CAT[cat].namn}. ”${k}” hamnar i Sortera varje gång.`;
     } else msg = `Sparat som ${K.CAT[cat].namn}.`;
+    if (K.CAT[cat].typ === 'ut') state.ui.senaste = [cat, ...state.ui.senaste.filter((c) => c !== cat)].slice(0, 8);
+    const bk = t.nyckel || (mode === 'fraga' ? k : null);
+    if (bk) state.ui.butik[bk] = [cat, ...((state.ui.butik[bk] || []).filter((c) => c !== cat))].slice(0, 4);
     const ok = save(); refresh();
-    if (ok) toast(msg, { label: 'Ångra', fn: () => { const o = JSON.parse(snap); state.regler = o.regler; state.overrides = o.overrides; save(); refresh(); toast('Ändringen är ångrad'); } });
+    if (ok) toast(msg, { label: 'Ångra', fn: () => { const o = JSON.parse(snap); state.regler = o.regler; state.overrides = o.overrides; state.ui.senaste = o.senaste; state.ui.butik = o.butik; save(); refresh(); toast('Ändringen är ångrad'); } });
   }
   function tagFor(t) {
     if (t.manuell) return ['Ändrad', ''];
     if (t.kalla === 'din regel') return ['Din regel', ''];
     if (t.kalla === 'gissning') return ['Gissning', 'gissning'];
+    if (t.kalla === 'fråga') return ['Fråga alltid', 'okant'];
     if (t.kalla === 'betalsätt') return ['Betalsätt', 'okant'];
     if (t.kat === 'okant') return ['Okänt', 'okant'];
     if (t.kat === 'intern') return ['Intern', ''];
@@ -1790,6 +1865,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
   // ---------- Sortera ----------
   function renderSort() {
     document.querySelectorAll('[data-sscope]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sscope === state.ui.sscope)));
+    $('sRegel').checked = state.ui.regelVidSort !== false;
     const list = $('sortList'); list.textContent = '';
     const q = all.filter((t) => (state.ui.sscope === 'alla' || t.period === cur) && needsReview(t)).sort((a, b) => Math.abs(b.belopp) - Math.abs(a.belopp));
     if (!q.length) { list.appendChild(el('div', 'empty', cur ? 'Inget att sortera här.' : 'Inga kontoutdrag inlästa än.')); return; }
@@ -1800,21 +1876,26 @@ nav.tabs a svg { width: 21px; height: 21px; }
       const [tag, cls] = tagFor(t);
       const meta = el('div', 'm', `${dShort(t.datum)}, ${t.konto}`); const tg = el('span', 'tag ' + cls, tag); meta.appendChild(tg);
       if (t.kalla === 'betalsätt') meta.append(' Välj vad köpet gällde.');
+      if (t.kalla === 'fråga') meta.append(' Du har valt att sortera den här butiken själv varje gång.');
       it.appendChild(meta);
       const qq = el('div', 'q');
       if (t.kalla === 'gissning') {
         const ok = el('button', 'ok', `Stämmer: ${K.CAT[t.kat].namn}`); ok.type = 'button';
-        ok.addEventListener('click', () => assign(t, t.kat, t.kat === 'swish', t.text)); qq.appendChild(ok);
+        ok.addEventListener('click', () => assign(t, t.kat, t.kat === 'swish' && state.ui.regelVidSort !== false ? 'regel' : 'post', t.text)); qq.appendChild(ok);
       }
-      (t.belopp > 0 ? QUICK_IN : QUICK).filter((c) => c !== t.kat).slice(0, t.kalla === 'gissning' ? 5 : 6).forEach((c) => {
+      const egen = (t.nyckel && state.ui.butik[t.nyckel]) || [];
+      const cand = t.belopp > 0 ? QUICK_IN : [...egen, ...state.ui.senaste, ...QUICK];
+      const mode = (t.kalla === 'betalsätt' || t.kalla === 'fråga' || state.ui.regelVidSort === false) ? 'post' : 'regel';
+      [...new Set(cand)].filter((c) => K.CAT[c] && c !== t.kat).slice(0, t.kalla === 'gissning' ? 5 : 6).forEach((c) => {
         const b = el('button', null, K.CAT[c].namn); b.type = 'button';
-        b.addEventListener('click', () => assign(t, c, t.kalla !== 'betalsätt', K.suggestKey(t.text))); qq.appendChild(b);
+        b.addEventListener('click', () => assign(t, c, mode, K.suggestKey(t.text))); qq.appendChild(b);
       });
       const more = el('button', null, 'Annat…'); more.type = 'button'; more.addEventListener('click', () => openSheet(t)); qq.appendChild(more);
       it.appendChild(qq); list.appendChild(it);
     });
   }
   document.querySelectorAll('[data-sscope]').forEach((b) => b.addEventListener('click', () => { state.ui.sscope = b.dataset.sscope; save(); renderSort(); }));
+  $('sRegel').addEventListener('change', () => { state.ui.regelVidSort = $('sRegel').checked; save(); renderSort(); });
 
   // ---------- Alla poster ----------
   function fillFilters() {
@@ -1864,20 +1945,35 @@ nav.tabs a svg { width: 21px; height: 21px; }
       g.appendChild(b);
     });
     desc();
-    const bet = t.kalla === 'betalsätt';
-    $('sheetRemember').checked = !bet;
-    $('sheetRememberText').textContent = bet ? 'Kom ihåg till nästa gång. Avråds här, betalsättet används till olika köp.' : 'Kom ihåg till nästa gång';
-    $('sheetKey').value = K.suggestKey(t.text);
-    $('sheetKeyRow').hidden = bet;
+    const bet = t.kalla === 'betalsätt', fr = t.kalla === 'fråga';
+    setMode(bet ? 'post' : (fr ? 'fraga' : 'regel'));
+    $('sheetModeHint').textContent = bet ? 'Betalsättet används till olika köp, så regel avråds.' : '';
+    $('sheetKey').value = t.nyckel || K.suggestKey(t.text);
+    $('newCatBox').hidden = true; $('newCatName').value = '';
     updAffected();
     sheetOpener = document.activeElement;
     $('sheetBg').hidden = false;
     const sel = g.querySelector('[aria-pressed="true"]') || g.querySelector('button'); if (sel) sel.focus();
   }
+  function getMode() { const r = document.querySelector('input[name="sheetMode"]:checked'); return r ? r.value : 'post'; }
+  function setMode(m) { document.querySelectorAll('input[name="sheetMode"]').forEach((r) => { r.checked = r.value === m; }); $('sheetKeyRow').hidden = m === 'post'; }
+  document.querySelectorAll('input[name="sheetMode"]').forEach((r) => r.addEventListener('change', () => { $('sheetKeyRow').hidden = getMode() === 'post'; updAffected(); }));
+  $('newCatBtn').addEventListener('click', () => { $('newCatBox').hidden = !$('newCatBox').hidden; if (!$('newCatBox').hidden) $('newCatName').focus(); });
+  $('newCatAdd').addEventListener('click', () => {
+    const namn = $('newCatName').value.trim(); if (!namn) { toast('Skriv ett namn på kategorin'); return; }
+    if (K.CATS.some((c) => c.namn.toLowerCase() === namn.toLowerCase())) { toast('Den kategorin finns redan'); return; }
+    const id = 'x_' + (namn.toLowerCase().replace(/å|ä/g, 'a').replace(/ö/g, 'o').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 24) || 'kat') + '_' + Date.now().toString(36).slice(-4);
+    state.egna = [...(state.egna || []), { id, namn, grupp: $('newCatGrp').value === 'fast' ? 'fast' : 'rorlig' }];
+    if (!save()) return;
+    const keep = sheetTx; refreshCats(); sheetCat = id;
+    const key = $('sheetKey').value, mode = getMode();
+    openSheet(keep); sheetCat = id; $('sheetKey').value = key; setMode(mode);
+    $('sheetCats').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x.textContent === namn)));
+    $('sheetDesc').textContent = 'Egen kategori.'; toast(`Kategorin ${namn} är skapad`);
+  });
   let sheetOpener = null;
-  function updAffected() { const n = affected($('sheetKey').value); $('sheetAffected').textContent = $('sheetRemember').checked && $('sheetKey').value.trim() ? `Regeln gäller ${n} ${n === 1 ? 'post' : 'poster'}, även tidigare perioder.` : ''; }
+  function updAffected() { const n = affected($('sheetKey').value); const m = getMode(); $('sheetAffected').textContent = m !== 'post' && $('sheetKey').value.trim() ? `Gäller ${n} ${n === 1 ? 'post' : 'poster'}, även tidigare perioder.` : ''; }
   $('sheetKey').addEventListener('input', updAffected);
-  $('sheetRemember').addEventListener('change', () => { $('sheetKeyRow').hidden = !$('sheetRemember').checked; updAffected(); });
   function closeSheet() { $('sheetBg').hidden = true; sheetTx = null; if (sheetOpener && document.body.contains(sheetOpener)) sheetOpener.focus(); }
   document.addEventListener('keydown', (e) => {
     if ($('sheetBg').hidden) return;
@@ -1892,9 +1988,8 @@ nav.tabs a svg { width: 21px; height: 21px; }
   $('sheetBg').addEventListener('click', (e) => { if (e.target === $('sheetBg')) closeSheet(); });
   $('sheetReset').addEventListener('click', () => { if (!sheetTx) return; delete state.overrides[sheetTx.id]; save(); closeSheet(); refresh(); toast('Återställd till appens förslag'); });
   $('sheetSave').addEventListener('click', () => {
-    if (!sheetTx) return; const t = { ...sheetTx, kalla: $('sheetRemember').checked ? 'manuell' : sheetTx.kalla };
-    const rem = $('sheetRemember').checked; const key = $('sheetKey').value.trim();
-    closeSheet(); assign(t, sheetCat, rem && !!key, key);
+    if (!sheetTx) return; const t = sheetTx, cat = sheetCat, mode = getMode(), key = $('sheetKey').value.trim();
+    closeSheet(); assign({ ...t, kalla: mode === 'post' ? t.kalla : 'manuell' }, cat, key ? mode : 'post', key);
   });
 
   // ---------- Budget och utfall ----------
@@ -1909,20 +2004,23 @@ nav.tabs a svg { width: 21px; height: 21px; }
     const sCur = sumPeriod(cur, 'mitt');
     $('bOrigin').textContent = state.budgets[cur] ? (b.ursprung ? `Budgetens ursprung: ${b.ursprung}` : 'Budget sparad för perioden.') : 'Ingen budget sparad för perioden. Visar ett förslag som sparas när du ändrar något.';
     $('budget').classList.toggle('cmp-on', !!state.ui.jamfor); $('bCmp').checked = !!state.ui.jamfor;
+    $('bFordelat').textContent = state.ui.fordela ? 'Överföringen till gemensamt är fördelad på kategorierna. Budgetera Boende, Mat och övrigt som helhet: det du betalar själv plus din del av det gemensamma.' : 'Överföringen till gemensamt är en egen rad, Gemensamt konto. Övriga kategorier gäller bara det du betalar från egna konton.';
     $('bInc').value = incomeFor(cur);
     $('incHint').textContent = `Har kommit in hittills: ${kr(sCur.inn)}`;
     K.GRUPPER.forEach((g) => {
-      const cats = UT.filter((c) => c.grupp === g.id && c.id !== 'engang');
+      const cats = UT.filter((c) => c.grupp === g.id && c.id !== 'engang' && !(c.id === 'gemensamt' && state.ui.fordela));
       if (!cats.length) return;
       const gp = el('div', 'gpanel g-' + g.id);
       const h = el('h3'); h.append(g.namn); const hs = el('span'); h.appendChild(hs); gp.appendChild(h);
       gp.appendChild(el('p', 'hint', g.besk));
+      const ofordelat = r0(-(sCur.sums.gemensamt || 0));
+      if (g.id === 'fast' && state.ui.fordela && ofordelat > 0) gp.appendChild(el('p', 'hint', `Överfört till gemensamt men inte använt där än: ${kr(ofordelat)}. Det fördelas på kategorierna när pengarna används.`));
       const panel = el('div', 'panel');
       const rowsRef = [];
       cats.forEach((c) => {
         const r = el('div', 'bud');
-        const top = el('div', 'top'); const l = el('div'); l.appendChild(el('div', 'n', c.namn)); l.appendChild(el('div', 'd', c.besk));
-        l.appendChild(el('div', 'd', `Rekommenderat ${kr(rekFor(c, cur))}${sPrev ? `, förra perioden ${kr(-(sPrev.sums[c.id] || 0))}` : ''}`));
+        const top = el('div', 'top'); const l = el('div'); l.appendChild(el('div', 'n', c.namn)); l.appendChild(el('div', 'd cmp', c.besk));
+        l.appendChild(el('div', 'd cmp', `Rekommenderat ${kr(rekFor(c, cur))}${sPrev ? `, förra perioden ${kr(-(sPrev.sums[c.id] || 0))}` : ''}`));
         const inp = el('input'); inp.type = 'number'; inp.inputMode = 'numeric'; inp.step = '100'; inp.min = '0';
         inp.value = b.cats[c.id] != null ? b.cats[c.id] : 0; inp.setAttribute('aria-label', 'Budget ' + c.namn);
         top.append(l, inp); r.appendChild(top);
@@ -2034,9 +2132,29 @@ nav.tabs a svg { width: 21px; height: 21px; }
     state.regler.forEach((r, i) => {
       const row = el('div', 'rule');
       const txt = r.nyckel ? `Börjar med ”${r.nyckel}”` : `”${r.exakt || r.s || r.r}”`;
-      row.appendChild(el('span', null, `${txt} blir ${(K.CAT[r.c] || {}).namn || r.c}`));
+      row.appendChild(el('span', null, r.fraga ? `${txt}: fråga alltid` : `${txt} blir ${(K.CAT[r.c] || {}).namn || r.c}`));
       const x = el('button', 'btn small', 'Ta bort'); x.type = 'button';
       x.addEventListener('click', () => { state.regler.splice(i, 1); save(); refresh(); });
+      row.appendChild(x); w.appendChild(row);
+    });
+  }
+  function renderCustom() {
+    const w = $('customList'); w.textContent = '';
+    if (!(state.egna || []).length) { w.appendChild(el('p', 'hint', 'Inga egna kategorier än. Skapa en under Sortera, via Annat och Ny kategori.')); return; }
+    state.egna.forEach((c, i) => {
+      const row = el('div', 'rule');
+      row.appendChild(el('span', null, `${c.namn} (${c.grupp === 'fast' ? 'fast' : 'rörlig'})`));
+      const x = el('button', 'btn small', 'Ta bort'); x.type = 'button';
+      x.addEventListener('click', () => {
+        const n = Object.values(state.overrides).filter((v) => v === c.id).length + state.regler.filter((r) => r.c === c.id).length;
+        if (n && x.dataset.arm !== '1') { x.dataset.arm = '1'; x.textContent = `Används på ${n} ställen, tryck igen`; setTimeout(() => { x.dataset.arm = ''; x.textContent = 'Ta bort'; }, 4000); return; }
+        state.egna.splice(i, 1);
+        Object.keys(state.overrides).forEach((k) => { if (state.overrides[k] === c.id) delete state.overrides[k]; });
+        state.regler = state.regler.filter((r) => r.c !== c.id);
+        Object.values(state.budgets).forEach((bb) => { delete bb.cats[c.id]; });
+        state.ui.senaste = state.ui.senaste.filter((v) => v !== c.id);
+        save(); refresh();
+      });
       row.appendChild(x); w.appendChild(row);
     });
   }
@@ -2170,7 +2288,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
 
     // Blad 4: Regler
     const rr2 = [[{ v: 'Text', s: 'head' }, { v: 'Kategori', s: 'head' }]];
-    state.regler.forEach((r) => rr2.push([{ v: r.nyckel ? `Börjar med ${r.nyckel}` : (r.exakt || r.s || r.r) }, { v: (K.CAT[r.c] || {}).namn || r.c }]));
+    state.regler.forEach((r) => rr2.push([{ v: r.nyckel ? `Börjar med ${r.nyckel}` : (r.exakt || r.s || r.r) }, { v: r.fraga ? 'Fråga alltid' : ((K.CAT[r.c] || {}).namn || r.c) }]));
     const shRules = { name: 'Regler', cols: [40, 28], rows: rr2, freeze: 1 };
 
     const bl = [...(state.buffert || [])].sort((a, c) => a.man.localeCompare(c.man));
@@ -2205,7 +2323,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
         state.imports.push({ konto, fran: ds[0] || null, till: ds[ds.length - 1] || null, rader: r.rader, datum: today() });
         any = true;
         line.textContent = `${konto}${ds.length ? ` (${ds[0]} till ${ds[ds.length - 1]})` : ''}: ${ny} nya, ${dup} fanns redan${r.prel ? `, ${r.prel} preliminära väntar tills de är bokförda` : ''}${r.fel ? `, ${r.fel} rader gick inte att läsa` : ''}.`;
-        if (r.rader >= 1000) { const w = el('div', 'warn', `Exporten har ${r.rader} rader och är troligen avkapad av banken. Ta ut den äldre delen som en egen fil.`); log.appendChild(w); }
+        if (r.rader === 1000) { const w = el('div', 'warn', `Exporten har ${r.rader} rader och är troligen avkapad av banken. Ta ut den äldre delen som en egen fil.`); log.appendChild(w); }
       } catch (err) { line.textContent = `${f.name}: Kunde inte läsas (${err.message}).`; }
     }
     if (any) { state.valdPeriod = null; if (!save()) return; }
@@ -2218,7 +2336,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
     for (let i = 1; i < ds.length; i++) if (daysBetween(ds[i - 1], ds[i]) > 25) gaps.push([ds[i - 1], ds[i]]);
     const imp = state.imports.filter((x) => x.konto === n).sort((a, c) => a.datum.localeCompare(c.datum));
     const last = imp[imp.length - 1];
-    return { text: `${ds.length} poster, ${ds[0]} till ${ds[ds.length - 1]}${last ? `. Senast inläst ${last.datum}` : ''}.`, gaps, capped: imp.some((x) => x.rader >= 1000) };
+    return { text: `${ds.length} poster, ${ds[0]} till ${ds[ds.length - 1]}${last ? `. Senast inläst ${last.datum}` : ''}.`, gaps, capped: imp.some((x) => x.rader === 1000) };
   }
   function mergeAccount(from, to) {
     Object.values(state.tx).filter((t) => t.konto === from).forEach((t) => {
@@ -2318,7 +2436,7 @@ nav.tabs a svg { width: 21px; height: 21px; }
   $('period').addEventListener('change', (e) => { state.valdPeriod = e.target.value; cur = e.target.value; save(); renderAll(); });
 
   function renderAll() {
-    renderPeriods(); fillFilters(); renderAccounts(); renderRules();
+    renderPeriods(); fillFilters(); renderAccounts(); renderRules(); renderCustom();
     const n = all.filter((t) => t.period === cur && needsReview(t)).length;
     const badge = $('unkBadge'); badge.textContent = ''; if (n) badge.appendChild(el('span', 'badge', String(n)));
     renderTab(currentTab());
