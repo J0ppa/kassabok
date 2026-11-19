@@ -358,6 +358,30 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
 .eq.ledger .lr.res b { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-weight: 400; font-size: clamp(28px, 8vw, 36px); color: var(--pine); }
 .eq.ledger .lr.res.neg b { color: var(--red); }
 #sparRow .bar i { background: var(--c-buf); }
+
+/* v10: tydlig status på poster */
+.st { display: inline-grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; font-size: 11px; line-height: 1; font-weight: 700; margin-right: 6px; vertical-align: -3px; flex: none; }
+.st-ok { background: var(--pine-soft); color: var(--pine); }
+.st-need { background: var(--amber); color: #fff; }
+.st-auto { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.item.need { background: var(--amber-soft); }
+.item .m b { font-weight: 600; color: var(--ink); }
+.item.need .m b { color: var(--ink); }
+.stlegend { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; }
+
+.stlegend .lg { white-space: nowrap; margin-right: 14px; display: inline-flex; align-items: center; }
+.stlegend .st { margin-right: 5px; vertical-align: 0; }
+
+.item .m .l1, .item .m .l2 { display: block; }
+.item .m .l2 { margin-left: 23px; }
+.item .chip { align-self: start; margin-top: 2px; }
+
+/* v11: öronmärkt */
+.oronrow { display: grid; grid-template-columns: minmax(0, 1fr) 84px auto; gap: 6px; align-items: center; margin: 8px 0; }
+.oronrow select, .oronrow input { width: 100%; }
+.bud .d.orn { color: var(--c-buf); }
+.out .warnt { color: var(--amber); font-weight: 600; }
+#oronBox .n { font-weight: 600; }
 </style>
 </head>
 <body>
@@ -441,6 +465,12 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       </ul>
     </details>
     <h3>Alla poster</h3>
+    <div class="seg" role="group" aria-label="Visa poster" style="margin-bottom:6px">
+      <button type="button" data-fstatus="alla" aria-pressed="true">Alla</button>
+      <button type="button" data-fstatus="need" aria-pressed="false">Behöver dig</button>
+      <button type="button" data-fstatus="ok" aria-pressed="false">Sorterade</button>
+    </div>
+    <p class="hint stlegend"><span class="lg"><span class="st st-ok" aria-hidden="true">✓</span>sorterad</span><span class="lg"><span class="st st-need" aria-hidden="true">!</span>behöver dig</span><span class="lg"><span class="st st-auto" aria-hidden="true">⇄</span>överföring, automatiskt</span></p>
     <div class="filters">
       <select id="fCat" aria-label="Kategori"></select>
       <select id="fAcc" aria-label="Konto"></select>
@@ -471,7 +501,9 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
         <li><b>Perioden nu</b> visar budget mot utfall för perioden som pågår. <b>Planera nästa lön</b> låter dig sätta budgeten innan lönen kommer.</li>
         <li>Beloppen är förifyllda med snittet av dina senaste perioder. Shopping, restaurang och liknande får högst ett målvärde.</li>
         <li>Belopp du själv ändrar följer med till nästa period. Resten räknas om automatiskt.</li>
-        <li>Skriv ett <b>sparmål</b>. Rutan längst ner visar vad som blir kvar efter budget och sparande.</li>
+        <li>Skriv ett <b>sparmål</b> för det du sparar utöver budgeten, till exempel Lysa. Rutan längst ner visar vad som blir kvar efter budget och sparande.</li>
+        <li><b>Öronmärkt</b> är pengar ur budgeten som du flyttar till sparkontot tills köpet kommer, till exempel bilservice och mediciner. Köpet sorterar du i rätt kategori, Bil eller Hälsa/apotek, och du tar pengarna från sparkontot. Inget räknas dubbelt.</li>
+        <li><b>Engångskostnader</b> är för stora köp som inte återkommer, som barnvagn eller resa.</li>
         <li>Gemensamma kostnader ingår redan med din del i Boende, Mat och övrigt. Du behöver inte räkna på överföringen.</li>
       </ol>
     </details>
@@ -481,11 +513,17 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     </div>
     <h3 class="c-buf">Sparande</h3>
     <div class="panel">
-      <div class="bud" id="sparRow"><div class="top"><div><div class="n">Sparmål</div><div class="d">Det du för över till buffert och andra sparkonton. Ingen kostnad, men pengarna lämnar kontot.</div></div><input id="bSpar" type="number" inputmode="numeric" step="100" min="0" placeholder="0" aria-label="Sparmål"></div><div class="out"><span id="sparUtf"></span><span id="sparKvar"></span></div><div class="bar"><i id="sparBar"></i></div></div>
+      <div class="bud" id="sparRow"><div class="top"><div><div class="n">Sparmål</div><div class="d">Det du sparar utöver budgeten, till exempel Lysa. Ingen kostnad, men pengarna lämnar kontot.</div></div><input id="bSpar" type="number" inputmode="numeric" step="100" min="0" placeholder="0" aria-label="Sparmål"></div><div class="out"><span id="sparUtf"></span><span id="sparKvar"></span></div><div class="bar"><i id="sparBar"></i></div></div>
+      <div class="bud" id="oronBox">
+        <div class="n">Öronmärkt i bufferten</div>
+        <div class="d">Pengar ur budgeten som du flyttar till sparkontot tills köpet kommer, till exempel bilservice och mediciner. Köpet sorterar du i sin vanliga kategori och tar pengarna från sparkontot. Appen följer inte saldot per rad.</div>
+        <div id="oronList"></div>
+        <div class="btns"><button type="button" class="btn small" id="oronAdd">Lägg till öronmärkning</button></div></div>
     </div>
+    <p class="hint" id="attForaOver"></p>
     <div id="bGroups"></div>
     <h3 class="c-ovr">Engångskostnader</h3>
-    <p class="hint">Planerade köp i perioden, till exempel service på bilen eller en present.</p>
+    <p class="hint">Stora köp i perioden som inte återkommer, till exempel barnvagn eller resa. Bilservice och återkommande apoteksköp sorteras under Bil och Hälsa/apotek.</p>
     <div class="panel" id="bOneoffs"></div>
     <div class="btns">
       <button type="button" class="btn small" id="addOneoff">Lägg till engångskostnad</button>
@@ -676,7 +714,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     { id: 'fran_mig', namn: 'Från dig', typ: 'in', besk: 'Dina överföringar till det gemensamma kontot. Visas bara i vyn Gemensamt.' },
     { id: 'gemensamt', namn: 'Gemensamt konto', typ: 'ut', grupp: 'fast', rek: 0, besk: 'Det du för över till det gemensamma kontot. Det är din kostnad för hushållet, oavsett vad pengarna används till.' },
     { id: 'boende', namn: 'Boende', typ: 'ut', grupp: 'fast', rek: 0, besk: 'Bolån, hyra, el, VA och avfall.' },
-    { id: 'bil', namn: 'Bil', typ: 'ut', grupp: 'fast', rek: 3000, besk: 'Leasing, avbetalning, laddning, bränsle, parkering, service och fordonsskatt.' },
+    { id: 'bil', namn: 'Bil', typ: 'ut', grupp: 'fast', rek: 3000, besk: 'Leasing, avbetalning, laddning, bränsle, parkering, service, däck och fordonsskatt. Spara till större räkningar i förväg under Öronmärkt i Budget.' },
     { id: 'forsakring', namn: 'Försäkring och a-kassa', typ: 'ut', grupp: 'fast', rek: 300, besk: 'Hem, bil och andra försäkringar samt a-kassa.' },
     { id: 'abonnemang', namn: 'Abonnemang', typ: 'ut', grupp: 'fast', rek: 1200, besk: 'Mobil, streaming, appar och tjänster.' },
     { id: 'traning', namn: 'Träning', typ: 'ut', grupp: 'fast', rek: 580, besk: 'Gym och träningstjänster.' },
@@ -689,11 +727,11 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     { id: 'hem', namn: 'Hem och hushåll', typ: 'ut', grupp: 'rorlig', rek: 500, tak: true, besk: 'Inredning, verktyg, trädgård och saker till hemmet.' },
     { id: 'presenter', namn: 'Presenter', typ: 'ut', grupp: 'rorlig', rek: 300, tak: true, besk: 'Presenter och gåvor.' },
     { id: 'barn', namn: 'Barn', typ: 'ut', grupp: 'rorlig', rek: 500, besk: 'Barnkläder, leksaker och barnartiklar.' },
-    { id: 'halsa', namn: 'Hälsa', typ: 'ut', grupp: 'rorlig', rek: 800, besk: 'Apotek, tandvård och vård.' },
+    { id: 'halsa', namn: 'Hälsa/apotek', typ: 'ut', grupp: 'rorlig', rek: 800, besk: 'Apotek, mediciner, tandvård och vård. Spara till återkommande större köp i förväg under Öronmärkt i Budget.' },
     { id: 'noje', namn: 'Nöje', typ: 'ut', grupp: 'rorlig', rek: 800, tak: true, besk: 'Utflykter, nöjesparker, bio och resor.' },
     { id: 'swish', namn: 'Swish privat', typ: 'ut', grupp: 'rorlig', rek: 1000, tak: true, besk: 'Swish till privatpersoner.' },
     { id: 'ovrigt', namn: 'Övrigt', typ: 'ut', grupp: 'rorlig', rek: 500, tak: true, besk: 'Avgifter, föreningar och sådant som inte passar någon annanstans.' },
-    { id: 'engang', namn: 'Engångskostnader', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Planerade större köp. Lägg in dem som egna rader under Budget.' },
+    { id: 'engang', namn: 'Engångskostnader', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Stora köp som inte återkommer, till exempel barnvagn, resa eller möbler. Räknas inte in i snittet.' },
     { id: 'spel', namn: 'Spel', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Spel och betting, netto.' },
     { id: 'okant', namn: 'Okänt', typ: 'ut', grupp: 'ovr', rek: 0, besk: 'Poster som behöver sorteras. Tryck på dem under Poster.' },
     { id: 'sparande', namn: 'Sparande och egna konton', typ: 'neutral', besk: 'Överföringar till sparande och konton du inte läst in. Räknas inte som utgift.' },
@@ -721,6 +759,8 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     // Spel först, så att kodade mottagare inte hamnar fel
     ...['CASINO', 'LEOVEGAS', 'SPEEDYCASINO', 'FUNKYSPINS', 'LYLLO', 'CASINOSTUGAN', 'SNABBARE', 'UNIBET', 'BETSSON', 'SVENSKA SPEL'].map((s) => ({ s, c: 'spel' })),
     { r: '^(PAF|ATG|CHERRY)$', c: 'spel' },
+    { r: 'casino', c: 'spel' },
+    ...['EXPEKT', 'CASUMO', 'COMEON', 'NORDICBET', 'BET365', 'BETWAY', 'MR GREEN'].map((s) => ({ s, c: 'spel' })),
     // Betalsätt för olika köp hamnar i Okänt och sorteras för hand (före bil, eftersom kreditkortet heter Circle K)
     ...['CIRCLE K MASTE', 'KLARNA', 'SVEA BANK', 'QLIRO', 'WALLEY', 'AVARDA', 'SWEDBANK PAY', 'RESURS', 'QVICKLY'].map((s) => ({ s, c: 'okant', betalsatt: true })),
     { s: 'COLLECTIA', c: 'krediter' },
@@ -791,7 +831,12 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   // Heuristiker när ingen regel träffar
   function heuristic(text) {
     const t = norm(text);
-    if (/^(?=.*[a-z])(?=.*[A-Z])[A-Za-z0-9]{10,12}$/.test(t)) return 'spel';
+    // Kodade mottagare: ett ord på 10 till 12 tecken med siffror bland bokstäverna, eller med många stora och små bokstäver om vartannat.
+    // Ett vanligt ord som Tangentbord, med bara första bokstaven stor, är inte en kod.
+    if (/^[A-Za-z0-9]{10,12}$/.test(t)) {
+      const up = (t.match(/[A-Z]/g) || []).length, lo = (t.match(/[a-z]/g) || []).length, dg = (t.match(/\d/g) || []).length;
+      if ((dg >= 1 && up + lo >= 5) || (up >= 3 && lo >= 3)) return 'spel';
+    }
     if (/^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{12}$/.test(t)) return 'spel';
     if (/^[A-ZÅÄÖÉ][a-zåäöé]+( [A-ZÅÄÖÉ][a-zåäöé]+){1,2}$/.test(t)) return 'swish';
     if (/^[A-ZÅÄÖÉ\- ]+, ?[A-ZÅÄÖÉ]+$/.test(t)) return 'swish';
@@ -1385,10 +1430,11 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     y -= 34;
 
     // Inkomst och plus
-    need(104);
+    need(124);
     const sp = m.sparat || 0;
     const rows = [['Inkomst', m.inkomst], ['Utgifter', -tU], [sp >= 0 ? 'Till sparande' : 'Uttag från sparande', -sp], ['Kvar efter sparande', m.inkomst - tU - sp]];
     if (m.planerad != null) rows.push(['Enligt budget: planerad inkomst ' + kr(m.planerad) + ' minus budget' + (m.sparmal ? ' och sparmål ' + kr(m.sparmal) : ''), m.planerad - (m.budget != null ? m.budget : tB) - (m.sparmal || 0)]);
+    if ((m.sparmal || 0) + (m.oronmarkt || 0) > 0) rows.push(['Att föra över till sparkonton: sparmål ' + kr(m.sparmal || 0) + (m.oronmarkt ? ' och öronmärkt ' + kr(m.oronmarkt) + ', som ingår i budgeten' : ''), (m.sparmal || 0) + (m.oronmarkt || 0)]);
     rows.forEach((r, i) => {
       const sum = i === 3;
       d.text(L + 6, y - 10, r[0], { size: 10, bold: sum, maxW: cK - L - 90 });
@@ -1455,10 +1501,10 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     return {
       tx: {}, overrides: {}, regler: [], konton: {}, budgets: {}, scope: 'mitt', valdPeriod: null,
       settings: { minLon: 10000, startdag: 25, egetNamn: '', bufNamn: 'Buffertkonto' },
-      ui: { sscope: 'period', ymode: 'lon', yscope: 'mitt', fordela: true, regelVidSort: true, senaste: [], butik: {}, ejGem: {}, plan: false }, buffert: [], alias: {}, imports: [], egna: [], schema: 5,
+      ui: { sscope: 'period', ymode: 'lon', yscope: 'mitt', fordela: true, regelVidSort: true, senaste: [], butik: {}, ejGem: {}, plan: false, jamfor: true }, buffert: [], alias: {}, imports: [], egna: [], schema: 6,
     };
   }
-  const SCHEMA = 5;
+  const SCHEMA = 6;
   // Validera och migrera sparad data. Kastar fel om datan inte går att använda.
   function normalize(s) {
     if (!s || typeof s !== 'object' || Array.isArray(s)) throw new Error('Ingen giltig data');
@@ -1505,7 +1551,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       if (!b || typeof b !== 'object' || typeof b.cats !== 'object') return;
       const id = /^\d{4}-\d{2}-\d{2}$/.test(k) ? K.periodId(k) : k;
       if (bud[id]) return;
-      bud[id] = { andrade: b.andrade && typeof b.andrade === 'object' ? b.andrade : {}, spar: Number.isFinite(b.spar) ? b.spar : null, inc: Number.isFinite(b.inc) ? b.inc : null, cats: Object.fromEntries(Object.entries(b.cats).filter(([c, v]) => K.CAT[c] && Number.isFinite(+v)).map(([c, v]) => [c, +v])), oneoffs: Array.isArray(b.oneoffs) ? b.oneoffs.filter((o) => o && typeof o === 'object').map((o) => ({ text: String(o.text || ''), belopp: +o.belopp || 0 })) : [], ursprung: typeof b.ursprung === 'string' ? b.ursprung : '' };
+      bud[id] = { andrade: b.andrade && typeof b.andrade === 'object' ? b.andrade : {}, spar: Number.isFinite(b.spar) ? b.spar : null, oron: Array.isArray(b.oron) ? b.oron.filter((o) => o && K.CAT[o.cat] && Number.isFinite(+o.belopp)).map((o) => ({ cat: o.cat, belopp: +o.belopp })) : [], inc: Number.isFinite(b.inc) ? b.inc : null, cats: Object.fromEntries(Object.entries(b.cats).filter(([c, v]) => K.CAT[c] && Number.isFinite(+v)).map(([c, v]) => [c, +v])), oneoffs: Array.isArray(b.oneoffs) ? b.oneoffs.filter((o) => o && typeof o === 'object').map((o) => ({ text: String(o.text || ''), belopp: +o.belopp || 0 })) : [], ursprung: typeof b.ursprung === 'string' ? b.ursprung : '' };
     });
     if (!s.schema || s.schema < 3) Object.values(bud).forEach((b) => { b.ursprung = 'Gjord med det gamla upplägget, där gemensamma kostnader räknades med din andel. Se över Gemensamt konto, Boende, Mat och Bil, eller tryck Fyll med rekommenderat.'; });
     out.budgets = bud;
@@ -1513,7 +1559,8 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     if (out.ui.yscope !== 'gemensamt') out.ui.yscope = 'mitt';
     if (!s.schema || s.schema < 4) out.ui.fordela = true;
     if (!out.ui.ejGem || typeof out.ui.ejGem !== 'object') out.ui.ejGem = {};
-    out.ui.senaste = (Array.isArray(out.ui.senaste) ? out.ui.senaste : []).filter((c) => K.CAT[c]).slice(0, 8);
+    out.ui.senaste = (Array.isArray(out.ui.senaste) ? out.ui.senaste : []).filter((c) => K.CAT[c] && c !== 'engang' && c !== 'okant').slice(0, 8);
+    if (!s.schema || s.schema < 6) out.ui.jamfor = true;
     if (!out.ui.butik || typeof out.ui.butik !== 'object') out.ui.butik = {};
     out.schema = SCHEMA;
     return out;
@@ -1635,7 +1682,28 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     if (!m) return c.rek || 0;
     return c.tak ? Math.min(m[c.id], c.rek || 0) : m[c.id];
   }
-  function rekBudget(k) { const cats = {}; UT.forEach((c) => { if (c.id !== 'engang') cats[c.id] = rekFor(c, k); }); return { inc: null, cats, oneoffs: [], andrade: {}, spar: null }; }
+  function rekBudget(k) { const cats = {}; UT.forEach((c) => { if (c.id !== 'engang') cats[c.id] = rekFor(c, k); }); return { inc: null, cats, oneoffs: [], andrade: {}, spar: null, oron: [] }; }
+  // Öronmärkt: budgeterade pengar som flyttas till sparkontot tills köpet kommer. Ingår i budgeten, räknas inte en gång till.
+  const oronOf = (b) => (b && Array.isArray(b.oron) ? b.oron : []);
+  const oronSum = (b) => oronOf(b).reduce((s, o) => s + (+o.belopp || 0), 0);
+  const oronFor = (b, cat) => oronOf(b).filter((o) => o.cat === cat).reduce((s, o) => s + (+o.belopp || 0), 0);
+  // Brutto till och från sparande i en lista poster (egna konton)
+  function sparFlows(list) {
+    let D = 0, W = 0;
+    list.forEach((t) => { if (t.kat === 'sparande' && K.inScope(t, 'mitt')) { if (t.belopp < 0) D -= t.belopp; else W += t.belopp; } });
+    return { D: r0(D), W: r0(W) };
+  }
+  // Senaste bokförda saldo per konto, enligt kontoutdragets saldokolumn
+  function lastSaldo(konto) {
+    const rows = all.filter((t) => t.konto === konto && Number.isFinite(t.saldo));
+    if (!rows.length) return null;
+    const last = rows.reduce((m, t) => (t.datum > m ? t.datum : m), '');
+    const day = rows.filter((t) => t.datum === last);
+    const c = (v) => Math.round(v * 100);
+    const before = new Set(day.map((t) => c(t.saldo - t.belopp)));
+    const end = day.find((t) => !before.has(c(t.saldo))) || day[0];
+    return { saldo: end.saldo, datum: last };
+  }
   // Nästa period: beräknas från senaste lönen plus en typisk periodlängd
   function planKey() { const last = pers[pers.length - 1]; return last ? K.periodId(K.addDays(last.start, typicalLen())) : null; }
   function planStart() { const last = pers[pers.length - 1]; return last ? K.addDays(last.start, typicalLen()) : null; }
@@ -1649,6 +1717,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       const src = state.budgets[ks[ks.length - 1]];
       Object.keys(src.andrade || {}).forEach((id) => { if (src.cats[id] != null) { b.cats[id] = src.cats[id]; b.andrade[id] = true; } });
       if (src.spar != null) b.spar = src.spar;
+      b.oron = (src.oron || []).map((o) => ({ cat: o.cat, belopp: o.belopp }));
       const n = Object.keys(b.andrade).length;
       b.ursprung = n ? `Rekommenderade belopp utifrån dina senaste perioder. ${n} ${n === 1 ? 'belopp' : 'belopp'} du själv satt följde med.` : 'Rekommenderade belopp utifrån dina senaste perioder.';
     } else b.ursprung = 'Rekommenderade belopp utifrån dina senaste perioder.';
@@ -1721,11 +1790,24 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       state.regler.unshift({ nyckel: k, fraga: true });
       msg = `${K.CAT[cat].namn}. ”${k}” hamnar i Sortera varje gång.`;
     } else msg = `Sparat som ${K.CAT[cat].namn}.`;
-    if (K.CAT[cat].typ === 'ut') state.ui.senaste = [cat, ...state.ui.senaste.filter((c) => c !== cat)].slice(0, 8);
+    if (K.CAT[cat].typ === 'ut' && cat !== 'engang' && cat !== 'okant') state.ui.senaste = [cat, ...state.ui.senaste.filter((c) => c !== cat)].slice(0, 8);
     const bk = t.nyckel || (mode === 'fraga' ? k : null);
     if (bk) state.ui.butik[bk] = [cat, ...((state.ui.butik[bk] || []).filter((c) => c !== cat))].slice(0, 4);
     const ok = save(); refresh();
     if (ok) toast(msg, { label: 'Ångra', fn: () => { const o = JSON.parse(snap); state.regler = o.regler; state.overrides = o.overrides; state.ui.senaste = o.senaste; state.ui.butik = o.butik; save(); refresh(); toast('Ändringen är ångrad'); } });
+  }
+  // Status för varje post: ok = sorterad, need = behöver dig, auto = överföring som appen hanterar själv
+  function statusFor(t) {
+    if (t.overforing || t.sambo || t.kat === 'intern') { const [lab] = tagFor(t); return { kind: 'auto', icon: '⇄', label: lab, sub: 'automatiskt' }; }
+    if (needsReview(t)) {
+      if (t.kalla === 'gissning') return { kind: 'need', icon: '!', label: 'Gissning', sub: 'bekräfta' };
+      if (t.kalla === 'betalsätt') return { kind: 'need', icon: '!', label: 'Osorterad', sub: 'välj vad köpet var' };
+      if (t.kalla === 'fråga') return { kind: 'need', icon: '!', label: 'Osorterad', sub: 'välj varje gång' };
+      return { kind: 'need', icon: '!', label: 'Osorterad', sub: 'välj kategori' };
+    }
+    if (t.manuell) return { kind: 'ok', icon: '✓', label: 'Sorterad av dig', sub: '' };
+    if (t.kalla === 'din regel') return { kind: 'ok', icon: '✓', label: 'Sorterad av din regel', sub: '' };
+    return { kind: 'ok', icon: '✓', label: 'Sorterad automatiskt', sub: '' };
   }
   function tagFor(t) {
     if (t.overforing) return [t.kat === 'gemensamt' ? (t.belopp < 0 ? 'Till gemensamt' : 'Från gemensamt') : (t.kat === 'fran_mig' ? (t.belopp > 0 ? 'Från dig' : 'Till dig') : 'Överföring'), ''];
@@ -1778,14 +1860,19 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     $('eqResBox').classList.toggle('neg', plus < 0);
     const prog = $('eqProg'); prog.textContent = '';
     if (mitt && isLatest(cur)) {
-      const bb0 = budgetFor(cur, false); const spMal = Math.max(+bb0.spar || 0, sparat);
-      const pp = m.innPlan - m.prognosUt - spMal;
-      prog.append(frag(['Prognos: håller du budgeten', spMal ? ` och för över ${kr(spMal)} till sparande` : '', ' landar du på ', B(kr(pp)), ' kvar.']));
+      // Prognos: kostnader enligt budget (öronmärkt del flyttas till sparkontot i stället), planerad överföring och uttag hittills
+      const bb0 = budgetFor(cur, false); const fl = sparFlows(all.filter((t) => t.period === cur));
+      const T = (+bb0.spar || 0) + oronSum(bb0);
+      const kost = UT.reduce((x, c) => x + Math.max(r0(-(m.s.sums[c.id] || 0)), Math.max(0, catBudget(bb0, c.id) - oronFor(bb0, c.id))), 0);
+      const pp = m.innPlan - kost - Math.max(T, fl.D) + fl.W;
+      prog.append(frag(['Prognos: håller du budgeten', T ? ` och för över ${kr(Math.max(T, fl.D))} till sparkontona` : '', fl.W ? `, med uttaget på ${kr(fl.W)} medräknat,` : '', ' landar du på ', B(kr(pp)), ' kvar.']));
     } else if (mitt) {
       prog.append(frag(['Perioden är avslutad. Budget ', B(kr(m.budget)), ', utfall ', B(kr(m.utfall)), '.']));
     }
-    const bb = budgetFor(cur, false);
-    if (bb.spar) prog.append(el('div', null, `Sparmål ${kr(bb.spar)}, fört över hittills ${kr(Math.max(0, sparat))}.`));
+    const bb = budgetFor(cur, false); const T2 = (+bb.spar || 0) + oronSum(bb);
+    if (T2) { const f2 = sparFlows(all.filter((t) => t.period === cur)); prog.append(el('div', null, `Att föra över till sparkonton: ${kr(T2)}${oronSum(bb) ? ` (sparmål ${kr(+bb.spar || 0)} och öronmärkt ${kr(oronSum(bb))})` : ''}. Fört över hittills ${kr(f2.D)}${f2.W ? `, uttag ${kr(f2.W)}` : ''}.`)); }
+    const saldon = kontoNamn('mitt').filter((n) => state.konton[n].typ !== 'spar').map((n) => [n, lastSaldo(n)]).filter(([, x]) => x);
+    if (saldon.length) prog.append(el('div', 'hint', saldon.map(([n, x]) => `Saldo på ${n}: ${kr(x.saldo)} den ${dShort(x.datum)}`).join('. ') + '. Bokfört enligt senaste kontoutdraget.'));
     if (!kontoNamn('gemensamt').length) prog.append(el('div', 'hint', 'Inget gemensamt konto är inläst. Överföringar dit kan då inte skiljas från sparande.'));
     else if (!all.some((t) => t.period === cur && t.kontotyp === 'gemensamt')) prog.append(el('div', 'hint', 'Gemensamt konto saknar poster för perioden. Läs in det, annars ser överföringar dit ut som sparande.'));
 
@@ -1845,8 +1932,9 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       const pct = Math.max(0, r.utfall / r.budget);
       const bar = el('div', 'bar'); const i = el('i'); i.style.width = Math.min(100, pct * 100) + '%'; bar.appendChild(i); sm.appendChild(bar);
       const rest = r.budget - r.utfall;
-      sm.appendChild(el('div', 'rest', rest >= 0 ? `${kr(rest)} kvar` : `${kr(-rest)} över budget`));
-      if (pct > 1) d.classList.add('over'); else if (pct > 0.85) d.classList.add('warn');
+      const orn = mitt && cur ? oronFor(budgetFor(cur, false), r.id) : 0;
+      sm.appendChild(el('div', 'rest', rest >= 0 ? `${kr(rest)} kvar` : (orn ? `${kr(-rest)} över, öronmärkt i bufferten` : `${kr(-rest)} över budget`)));
+      if (pct > 1) d.classList.add(orn ? 'warn' : 'over'); else if (pct > 0.85) d.classList.add('warn');
     } else if (mitt && r.utfall > 0) { d.classList.add('nobudget'); sm.appendChild(el('div', 'rest', 'Ingen budget satt')); }
     d.appendChild(sm);
     const more = el('div', 'more'); more.appendChild(el('div', null, r.besk));
@@ -1854,7 +1942,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     more.appendChild(bt); d.appendChild(more);
     return d;
   }
-  function showPosts(cat) { $('fCat').value = cat; $('fAcc').value = ''; $('fSearch').value = ''; $('fScope').value = 'period'; location.hash = '#sortera'; setTimeout(() => { const h = $('txList'); if (h) h.scrollIntoView({ block: 'start' }); }, 60); }
+  function showPosts(cat) { fStatus = 'alla'; $('fCat').value = cat; $('fAcc').value = ''; $('fSearch').value = ''; $('fScope').value = 'period'; location.hash = '#sortera'; setTimeout(() => { const h = $('txList'); if (h) h.scrollIntoView({ block: 'start' }); }, 60); }
 
   $('ovFordela').addEventListener('change', () => { state.ui.fordela = $('ovFordela').checked; save(); renderOverview(); });
 
@@ -1884,7 +1972,9 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     const ai = andelInfo(all.filter((t) => t.period === cur));
     const ai12 = andelInfo(all.filter((t) => pers.slice(-12).some((p) => p.key === t.period)));
     const info = $('jAndel'); info.textContent = '';
+    const js = kontoNamn('gemensamt').map((n) => [n, lastSaldo(n)]).filter(([, x]) => x);
     info.append(frag(['Du satte in ', B(kr(ai.mig)), ' och övriga insättningar var ', B(kr(ai.ovr)), '.', ai.pct != null ? ` Din andel den här perioden: ${ai.pct} %.` : '', ai12.pct != null ? ` Snitt senaste tolv perioderna: ${ai12.pct} %.` : '']));
+    if (js.length) info.appendChild(el('div', 'hint', js.map(([n, x]) => `Saldo på ${n}: ${kr(x.saldo)} den ${dShort(x.datum)}`).join('. ') + '.'));
     const wrap = $('jGroups'); wrap.textContent = '';
     m.grupper.forEach((g) => {
       if (!g.rader.length) return;
@@ -1958,7 +2048,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
         ok.addEventListener('click', () => assign(t, t.kat, t.kat === 'swish' && state.ui.regelVidSort !== false ? 'regel' : 'post', t.text)); qq.appendChild(ok);
       }
       const egen = (t.nyckel && state.ui.butik[t.nyckel]) || [];
-      const cand = t.belopp > 0 ? QUICK_IN : [...egen, ...state.ui.senaste, ...QUICK];
+      const cand = (t.belopp > 0 ? QUICK_IN : [...egen, ...state.ui.senaste, ...QUICK]).filter((c) => c !== 'engang' && c !== 'okant');
       const mode = (t.kalla === 'betalsätt' || t.kalla === 'fråga' || state.ui.regelVidSort === false) ? 'post' : 'regel';
       [...new Set(cand)].filter((c) => K.CAT[c] && c !== t.kat).slice(0, t.kalla === 'gissning' ? 5 : 6).forEach((c) => {
         const b = el('button', null, K.CAT[c].namn); b.type = 'button';
@@ -1980,19 +2070,28 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     Object.keys(state.konton).sort().forEach((k) => fa.appendChild(new Option(k, k)));
     fc.value = keepC; fa.value = keepA;
   }
-  let txLimit = 200;
+  let txLimit = 200, fStatus = 'alla';
+  document.querySelectorAll('[data-fstatus]').forEach((x) => x.addEventListener('click', () => { fStatus = x.dataset.fstatus; txLimit = 200; renderTx(); }));
   function renderTx() {
     const list = $('txList'); list.textContent = '';
     const fc = $('fCat').value, fa = $('fAcc').value, qs = $('fSearch').value.trim().toLowerCase(), sc = $('fScope').value;
-    const rowsAll = all.filter((t) => (sc === 'alla' || t.period === cur) && (!fc || t.kat === fc) && (!fa || t.konto === fa) && (!qs || t.text.toLowerCase().includes(qs)))
+    const base = all.filter((t) => (sc === 'alla' || t.period === cur) && (!fc || t.kat === fc) && (!fa || t.konto === fa) && (!qs || t.text.toLowerCase().includes(qs)));
+    const nNeed = base.filter(needsReview).length, nOk = base.length - nNeed;
+    const lab = { alla: `Alla ${base.length}`, need: `Behöver dig ${nNeed}`, ok: `Sorterade ${nOk}` };
+    document.querySelectorAll('[data-fstatus]').forEach((x) => { x.textContent = lab[x.dataset.fstatus]; x.setAttribute('aria-pressed', String(x.dataset.fstatus === fStatus)); });
+    const rowsAll = base.filter((t) => fStatus === 'alla' || (fStatus === 'need') === needsReview(t))
       .sort((a, b) => b.datum.localeCompare(a.datum) || a.text.localeCompare(b.text));
     if (!rowsAll.length) list.appendChild(el('div', 'empty', cur ? 'Inga poster matchar.' : 'Inga kontoutdrag inlästa än.'));
     rowsAll.slice(0, txLimit).forEach((t) => {
-      const b = el('button', 'item'); b.type = 'button';
+      const st = statusFor(t);
+      const b = el('button', 'item ' + st.kind); b.type = 'button';
       b.appendChild(el('span', 't', t.text));
       b.appendChild(el('span', 'a' + (t.belopp > 0 ? ' pos' : ''), kr(t.belopp)));
-      const [tag, cls] = tagFor(t);
-      const m = el('span', 'm', `${dShort(t.datum)}, ${t.konto}`); m.appendChild(el('span', 'tag ' + cls, tag)); b.appendChild(m);
+      const m = el('span', 'm');
+      const ic = el('span', 'st st-' + st.kind, st.icon); ic.setAttribute('aria-hidden', 'true');
+      const l1 = el('span', 'l1'); l1.append(ic, el('b', null, st.label), st.sub ? ` ${st.sub}` : '');
+      m.append(l1, el('span', 'l2', `${dShort(t.datum)}, ${t.konto}`));
+      b.appendChild(m);
       const c = K.CAT[t.kat] || { namn: t.kat, typ: 'ut' };
       b.appendChild(el('span', 'chip' + (t.kat === 'okant' ? ' okant' : '') + (c.typ === 'neutral' ? ' neutral' : ''), c.namn));
       b.addEventListener('click', () => openSheet(t));
@@ -2085,7 +2184,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     $('bInc').value = plan ? (b.inc != null ? b.inc : r0(autoIncome(cur))) : incomeFor(cur);
     $('incHint').textContent = plan ? 'Förifyllt med inkomsten i perioden som pågår' : `Har kommit in hittills: ${kr(sCur.inn)}`;
     $('bSpar').value = b.spar != null ? b.spar : '';
-    sparUtfall = plan ? 0 : r0(-(sCur.sums.sparande || 0)); updSpar();
+    sparFlow = plan ? { D: 0, W: 0 } : sparFlows(all.filter((t) => t.period === cur)); renderOron(b); updSpar();
     K.GRUPPER.forEach((g) => {
       const cats = UT.filter((c) => c.grupp === g.id && c.id !== 'engang' && !(c.id === 'gemensamt' && state.ui.fordela));
       if (!cats.length) return;
@@ -2100,6 +2199,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
         const r = el('div', 'bud');
         const top = el('div', 'top'); const l = el('div'); l.appendChild(el('div', 'n', c.namn)); l.appendChild(el('div', 'd cmp', c.besk));
         l.appendChild(el('div', 'd cmp', `Rekommenderat ${kr(rekFor(c, BK))}${sPrev ? `, förra perioden ${kr(-(sPrev.sums[c.id] || 0))}` : ''}`));
+        const orn = oronFor(b, c.id); if (orn) l.appendChild(el('div', 'd orn', `Varav öronmärkt i bufferten ${kr(orn)}`));
         const inp = el('input'); inp.type = 'number'; inp.inputMode = 'numeric'; inp.step = '100'; inp.min = '0';
         inp.value = b.cats[c.id] != null ? b.cats[c.id] : 0; inp.setAttribute('aria-label', 'Budget ' + c.namn);
         top.append(l, inp); r.appendChild(top);
@@ -2108,9 +2208,10 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
         const utf = r0(-(sCur.sums[c.id] || 0));
         const upd = () => {
           const bud = Number(inp.value) || 0, kv = bud - utf;
-          ou.textContent = `Utfall ${kr(utf)}`; ok.textContent = kv >= 0 ? `Kvar ${kr(kv)}` : `${kr(-kv)} över`; ok.className = kv < 0 ? 'neg' : '';
+          ou.textContent = `Utfall ${kr(utf)}`; ok.textContent = kv >= 0 ? `Kvar ${kr(kv)}` : (orn ? `${kr(-kv)} över, öronmärkt i bufferten` : `${kr(-kv)} över`); ok.className = kv < 0 ? (orn ? 'warnt' : 'neg') : '';
           bi.style.width = bud > 0 ? Math.min(100, 100 * utf / bud) + '%' : (utf > 0 ? '100%' : '0');
-          r.classList.toggle('over', utf > bud && (bud > 0 || utf > 0)); r.classList.toggle('warn', bud > 0 && utf <= bud && utf / bud > 0.85);
+          const isOver = utf > bud && (bud > 0 || utf > 0);
+          r.classList.toggle('over', isOver && !orn); r.classList.toggle('warn', (isOver && !!orn) || (bud > 0 && utf <= bud && utf / bud > 0.85));
         };
         rowsRef.push({ inp, utf });
         const updGroup = () => { const gb = rowsRef.reduce((x, o) => x + (Number(o.inp.value) || 0), 0), gu = rowsRef.reduce((x, o) => x + o.utf, 0); hs.textContent = `budget ${nf(gb)}, utfall ${nf(gu)}`; };
@@ -2138,12 +2239,38 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     updateTotals();
   }
   function bk() { return state.ui.plan ? planKey() : cur; }
-  let sparUtfall = 0;
+  let sparFlow = { D: 0, W: 0 };
+  const ORON_CATS = () => UT.filter((c) => !['engang', 'okant', 'spel', 'gemensamt', 'krediter'].includes(c.id));
+  function renderOron(b) {
+    const w = $('oronList'); w.textContent = '';
+    oronOf(b).forEach((o, i) => {
+      const r = el('div', 'oronrow');
+      const s = el('select'); s.setAttribute('aria-label', 'Kategori för öronmärkning');
+      ORON_CATS().forEach((c) => { const op = el('option', null, c.namn); op.value = c.id; if (c.id === o.cat) op.selected = true; s.appendChild(op); });
+      const a = el('input'); a.type = 'number'; a.inputMode = 'numeric'; a.step = '100'; a.min = '0'; a.value = o.belopp || ''; a.placeholder = 'Belopp'; a.setAttribute('aria-label', 'Belopp per månad');
+      const x = el('button', 'btn small', 'Ta bort'); x.type = 'button';
+      s.addEventListener('change', () => { const bb = budgetFor(bk(), true); bb.oron[i].cat = s.value; save(); renderBudget(); });
+      a.addEventListener('input', () => { const bb = budgetFor(bk(), true); bb.oron[i].belopp = Number(a.value) || 0; saveSoon(); updSpar(); });
+      a.addEventListener('change', () => { save(); renderBudget(); });
+      x.addEventListener('click', () => { const bb = budgetFor(bk(), true); bb.oron.splice(i, 1); save(); renderBudget(); });
+      r.append(s, a, x); w.appendChild(r);
+    });
+    if (!oronOf(b).length) w.appendChild(el('p', 'hint', 'Inget öronmärkt än. Till exempel Bil 1 500 kr i månaden.'));
+  }
+  $('oronAdd').addEventListener('click', () => {
+    if (!cur) return; const bb = budgetFor(bk(), true); bb.oron = bb.oron || [];
+    const used = new Set(bb.oron.map((o) => o.cat)); const pref = ['bil', 'halsa', 'hem', 'presenter', 'barn', 'forsakring'];
+    const first = pref.map((id) => K.CAT[id]).find((c) => c && !used.has(c.id)) || ORON_CATS().find((c) => !used.has(c.id)) || ORON_CATS()[0];
+    bb.oron.push({ cat: first.id, belopp: 0 }); save(); renderBudget();
+    const ins = document.querySelectorAll('#oronList input'); if (ins.length) ins[ins.length - 1].focus();
+  });
   function updSpar() {
-    const mal = Number($('bSpar').value) || 0, u2 = sparUtfall;
-    $('sparUtf').textContent = state.ui.plan ? '' : (u2 >= 0 ? `Fört över ${kr(u2)}` : `Uttag ${kr(-u2)}`);
-    $('sparKvar').textContent = state.ui.plan || !mal ? '' : (u2 >= mal ? 'Målet nått' : `${kr(mal - Math.max(0, u2))} kvar till målet`);
-    $('sparBar').style.width = mal > 0 ? Math.min(100, Math.max(0, 100 * u2 / mal)) + '%' : '0';
+    const b = budgetFor(bk(), false);
+    const mal = Number($('bSpar').value) || 0, orn = oronSum(b), T = mal + orn, f = sparFlow;
+    $('sparUtf').textContent = state.ui.plan ? '' : `Fört över ${kr(f.D)}${f.W ? `, uttag ${kr(f.W)}` : ''}`;
+    $('sparKvar').textContent = state.ui.plan || !T ? '' : (f.D >= T ? 'Allt överfört' : `${kr(T - f.D)} kvar att föra över`);
+    $('sparBar').style.width = T > 0 ? Math.min(100, Math.max(0, 100 * f.D / T)) + '%' : '0';
+    $('attForaOver').textContent = T ? `Att föra över till sparkontona: ${kr(T)}, sparmål ${kr(mal)}${orn ? ` och öronmärkt ${kr(orn)}` : ''}. Det öronmärkta ingår redan i budgeten och räknas inte en gång till.` : '';
   }
   function updateTotals() {
     const b = budgetFor(bk(), false);
@@ -2293,7 +2420,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       titel: 'Budget', period: periodLabel(p, true), omfang: 'Din ekonomi', skapad: today(),
       kort: [{ label: isLatest(cur) ? 'Inkomst hittills' : 'Inkomst', value: kr(m.innFakt) }, { label: 'Budget', value: kr(m.budget) }, { label: 'Utfall', value: kr(m.utfall) }, { label: 'Kvar efter sparande', value: kr(plus), tone: plus >= 0 ? 'good' : 'bad' }],
       grupper: m.grupper.map((g) => ({ namn: g.namn, rader: g.rader.map((r) => ({ namn: r.namn, budget: r.budget, utfall: r.utfall })) })),
-      inkomst: m.innFakt, planerad: m.innPlan, budget: m.budget, sparat, sparmal: +m.b.spar || 0,
+      inkomst: m.innFakt, planerad: m.innPlan, budget: m.budget, sparat, sparmal: +m.b.spar || 0, oronmarkt: oronSum(m.b),
       top: m.top.slice(0, 6).map((t) => ({ datum: t.datum, text: t.text, kategori: t.kategori, belopp: t.belopp })),
       noter: [urvalText('mitt'), ...noter(cur)],
     });
@@ -2314,7 +2441,9 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     const sparat = r0(-(m.s.sums.sparande || 0));
     const rUtf = rows.length + 1; rows.push([{ v: 'Utfall', s: 'b' }, { v: isLatest(cur) ? 'Dragits hittills i perioden' : 'Dragits under perioden', s: 'note' }, null]);
     const rSpar = rows.length + 1; rows.push([{ v: 'Till sparande', s: 'b' }, { v: 'Fört över till buffert och sparkonton, minus uttag', s: 'note' }, { v: sparat, s: 'krBig' }]);
-    const rMal = rows.length + 1; rows.push([{ v: 'Sparmål', s: 'b' }, { v: 'Planerat sparande i perioden', s: 'note' }, { v: +m.b.spar || 0, s: 'krBig' }]);
+    const rMal = rows.length + 1; rows.push([{ v: 'Sparmål', s: 'b' }, { v: 'Planerat sparande utöver budgeten', s: 'note' }, { v: +m.b.spar || 0, s: 'krBig' }]);
+    oronOf(m.b).forEach((o) => rows.push([{ v: `Öronmärkt: ${(K.CAT[o.cat] || {}).namn || o.cat}` }, { v: 'Ingår i budgeten, flyttas till sparkontot', s: 'note' }, { v: +o.belopp || 0, s: 'kr' }]));
+    if ((+m.b.spar || 0) + oronSum(m.b) > 0) rows.push([{ v: 'Att föra över till sparkonton', s: 'b' }, { v: 'Sparmål plus öronmärkt', s: 'note' }, { v: (+m.b.spar || 0) + oronSum(m.b), s: 'krBig' }]);
     const rPlus = rows.length + 1; rows.push([{ v: 'Kvar efter sparande', s: 'b' }, { v: 'Inkomst minus utfall minus sparande', s: 'note' }, null]);
     const rKvar = rows.length + 1; rows.push([{ v: 'Kvar enligt budget', s: 'b' }, { v: 'Planerad inkomst minus budget och sparmål', s: 'note' }, null]);
     rows.push([]);
