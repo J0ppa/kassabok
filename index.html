@@ -411,6 +411,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       <h3 class="c-fast">Vart pengarna gick</h3>
       <div class="stack" id="stack" aria-hidden="true"></div>
       <div class="legend" id="legend"></div>
+      <div id="staleNotice"></div>
       <div id="jointWarn"></div>
       <div id="unknownNotice"></div>
       <div class="trust" id="trust"></div>
@@ -1551,7 +1552,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       if (!b || typeof b !== 'object' || typeof b.cats !== 'object') return;
       const id = /^\d{4}-\d{2}-\d{2}$/.test(k) ? K.periodId(k) : k;
       if (bud[id]) return;
-      bud[id] = { andrade: b.andrade && typeof b.andrade === 'object' ? b.andrade : {}, spar: Number.isFinite(b.spar) ? b.spar : null, oron: Array.isArray(b.oron) ? b.oron.filter((o) => o && K.CAT[o.cat] && Number.isFinite(+o.belopp)).map((o) => ({ cat: o.cat, belopp: +o.belopp })) : [], inc: Number.isFinite(b.inc) ? b.inc : null, cats: Object.fromEntries(Object.entries(b.cats).filter(([c, v]) => K.CAT[c] && Number.isFinite(+v)).map(([c, v]) => [c, +v])), oneoffs: Array.isArray(b.oneoffs) ? b.oneoffs.filter((o) => o && typeof o === 'object').map((o) => ({ text: String(o.text || ''), belopp: +o.belopp || 0 })) : [], ursprung: typeof b.ursprung === 'string' ? b.ursprung : '' };
+      bud[id] = { andrade: b.andrade && typeof b.andrade === 'object' ? b.andrade : {}, spar: Number.isFinite(b.spar) ? b.spar : null, oron: Array.isArray(b.oron) ? b.oron.filter((o) => o && K.CAT[o.cat] && Number.isFinite(+o.belopp)).map((o) => ({ cat: o.cat, belopp: +o.belopp })) : [], inc: Number.isFinite(b.inc) ? b.inc : null, cats: Object.fromEntries(Object.entries(b.cats).filter(([c, v]) => K.CAT[c] && Number.isFinite(+v)).map(([c, v]) => [c, +v])), oneoffs: Array.isArray(b.oneoffs) ? b.oneoffs.filter((o) => o && typeof o === 'object').map((o) => ({ text: String(o.text || ''), belopp: +o.belopp || 0 })).filter((o) => o.text.trim() || o.belopp) : [], ursprung: typeof b.ursprung === 'string' ? b.ursprung : '' };
     });
     if (!s.schema || s.schema < 3) Object.values(bud).forEach((b) => { b.ursprung = 'Gjord med det gamla upplägget, där gemensamma kostnader räknades med din andel. Se över Gemensamt konto, Boende, Mat och Bil, eller tryck Fyll med rekommenderat.'; });
     out.budgets = bud;
@@ -1617,7 +1618,10 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     return long ? `Från ${dLong(p.start)}` : `Från ${dShort(p.start)}`;
   }
   function prevKey(k) { const i = pers.findIndex((p) => p.key === k); return i > 0 ? pers[i - 1].key : null; }
-  const isLatest = (k) => pers.length && pers[pers.length - 1].key === k;
+  const isLatest = (k) => { if (!pers.length) return false; const p = pers[pers.length - 1]; return p.key === k && (!p.slut || p.slut >= today()); };
+  // Senaste datum i kontoutdragen för dina egna konton
+  const lastDataDate = () => all.filter((t) => t.kontotyp !== 'gemensamt' && t.kontotyp !== 'spar').reduce((m, t) => (t.datum > m ? t.datum : m), '');
+  const isStale = () => { const d = lastDataDate(); return !!d && daysBetween(d, today()) > 7; };
   const typicalLen = () => { const l = pers.filter((p) => p.slut).map((p) => daysBetween(p.start, p.slut) + 1).sort((a, c) => a - c); return l.length ? l[Math.floor(l.length / 2)] : 30; };
   const kontoNamn = (typ) => Object.keys(state.konton).filter((n) => (state.konton[n].typ === 'gemensamt') === (typ === 'gemensamt')).sort();
 
@@ -1632,6 +1636,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     const parts = [B('Period '), periodLabel(p, true)];
     parts.push(p.lon ? `, från lönen ${dShort(p.start)}` : `, ingen lön hittad, startar den ${state.settings.startdag}:e`);
     if (isLatest(k)) { const gone = daysBetween(p.start, today()) + 1; if (gone > 0) parts.push(`. Pågår, dag ${gone} av ungefär ${typicalLen()}`); }
+    else if (pers.length && pers[pers.length - 1].key === k && isStale()) parts.push(`. Senaste inlästa perioden, kontoutdragen slutar ${dShort(lastDataDate())}`);
     parts.push('.');
     const n = all.filter((t) => t.period === k && K.inScope(t, scope)).length;
     box.append(frag(parts), el('br'), frag([B('Urval '), urvalText(scope), ` ${n} poster.`]));
@@ -1705,8 +1710,21 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     return { saldo: end.saldo, datum: last };
   }
   // Nästa period: beräknas från senaste lönen plus en typisk periodlängd
-  function planKey() { const last = pers[pers.length - 1]; return last ? K.periodId(K.addDays(last.start, typicalLen())) : null; }
-  function planStart() { const last = pers[pers.length - 1]; return last ? K.addDays(last.start, typicalLen()) : null; }
+  // Nästa lön: lönedagen (inställningen, normalt den 25:e), en vardag tidigare om den infaller på en helg
+  function nextSalaryAfter(d) {
+    const sd = Math.min(28, Math.max(1, +state.settings.startdag || 25));
+    let [y, m] = d.split('-').map(Number);
+    for (let i = 0; i < 3; i++) {
+      const dt = new Date(Date.UTC(y, m - 1, sd)); const wd = dt.getUTCDay();
+      if (wd === 6) dt.setUTCDate(dt.getUTCDate() - 1); else if (wd === 0) dt.setUTCDate(dt.getUTCDate() - 2);
+      const iso = dt.toISOString().slice(0, 10);
+      if (iso > d) return iso;
+      m++; if (m > 12) { m = 1; y++; }
+    }
+    return K.addDays(d, 30);
+  }
+  function planStart() { const last = pers[pers.length - 1]; if (!last) return null; const g = K.addDays(last.start, typicalLen()); const t = today(); return g > t ? g : nextSalaryAfter(t); }
+  function planKey() { const s = planStart(); return s ? K.periodId(s) : null; }
   function budgetFor(k, create) {
     if (!k) return rekBudget(k);
     if (state.budgets[k]) return state.budgets[k];
@@ -1896,7 +1914,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       const bt = el('a', 'btn small', 'Sortera'); bt.href = '#sortera'; n.appendChild(bt); notice.appendChild(n);
     }
     renderBuffer();
-    renderJointWarning();
+    renderJointWarning(); renderStale();
     $('trust').textContent = `Sorterat enligt regler eller av dig: ${Math.round(100 * m.sakerAndel)} % av utgifterna. Resten är gissningar eller osorterat.`;
 
     const wrap = $('groups'); wrap.textContent = '';
@@ -1946,6 +1964,14 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
 
   $('ovFordela').addEventListener('change', () => { state.ui.fordela = $('ovFordela').checked; save(); renderOverview(); });
 
+  function renderStale() {
+    const box = $('staleNotice'); box.textContent = '';
+    if (!isStale()) return;
+    const d = lastDataDate();
+    const n = el('div', 'notice'); n.appendChild(el('span', null, `Kontoutdragen slutar ${dShort(d)}. Läs in nya från ${dShort(K.addDays(d, 1))} för båda kontona, annars saknas perioden som pågår.`));
+    const bt = el('button', 'btn small', 'Importera'); bt.type = 'button'; bt.addEventListener('click', () => { location.hash = '#konton'; });
+    n.appendChild(bt); box.appendChild(n);
+  }
   function renderJointWarning() {
     const box = $('jointWarn'); box.textContent = '';
     const n = suspectJoint(); if (!n) return;
@@ -2284,7 +2310,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   $('bInc').addEventListener('input', () => { if (!cur) return; const b = budgetFor(bk(), true); b.inc = $('bInc').value === '' ? null : Number($('bInc').value); saveSoon(); updateTotals(); });
   $('bInc').addEventListener('change', save);
   $('bCmp').addEventListener('change', () => { state.ui.jamfor = $('bCmp').checked; save(); $('budget').classList.toggle('cmp-on', state.ui.jamfor); });
-  $('addOneoff').addEventListener('click', () => { if (!cur) return; budgetFor(cur, true).oneoffs.push({ text: '', belopp: 0 }); save(); renderBudget(); });
+  $('addOneoff').addEventListener('click', () => { if (!cur) return; budgetFor(bk(), true).oneoffs.push({ text: '', belopp: 0 }); save(); renderBudget(); const t = document.querySelectorAll('#bOneoffs input[type=text]'); if (t.length) t[t.length - 1].focus(); });
   $('bRek').addEventListener('click', () => { if (!cur) return; const b = budgetFor(bk(), true); b.cats = rekBudget(bk()).cats; b.andrade = {}; b.ursprung = 'Rekommenderade belopp.'; save(); renderBudget(); toast('Rekommenderade belopp ifyllda'); });
 
 
@@ -2413,27 +2439,32 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
 
   $('savePdf').addEventListener('click', () => {
     if (!cur) { toast('Läs in kontoutdrag först'); return; }
-    const m = model(cur, 'mitt'); const p = periodOf(cur);
+    const plan = !!state.ui.plan, EK = plan ? planKey() : cur;
+    const m = model(EK, 'mitt'); const p = periodOf(cur);
+    if (plan) { m.innFakt = 0; m.innPlan = m.b.inc != null ? m.b.inc : r0(autoIncome(cur)); }
     const sparat = r0(-(m.s.sums.sparande || 0));
     const plus = m.innFakt - m.utfall - sparat;
+    const kvarPlan = m.innPlan - m.budget - (+m.b.spar || 0);
     const u8 = PdfW.report({
-      titel: 'Budget', period: periodLabel(p, true), omfang: 'Din ekonomi', skapad: today(),
-      kort: [{ label: isLatest(cur) ? 'Inkomst hittills' : 'Inkomst', value: kr(m.innFakt) }, { label: 'Budget', value: kr(m.budget) }, { label: 'Utfall', value: kr(m.utfall) }, { label: 'Kvar efter sparande', value: kr(plus), tone: plus >= 0 ? 'good' : 'bad' }],
+      titel: plan ? 'Budget, planering' : 'Budget', period: plan ? `Nästa period, från lönen runt ${dLong(planStart())}` : periodLabel(p, true), omfang: 'Din ekonomi', skapad: today(),
+      kort: plan ? [{ label: 'Planerad inkomst', value: kr(m.innPlan) }, { label: 'Budget', value: kr(m.budget) }, { label: 'Sparmål', value: kr(+m.b.spar || 0) }, { label: 'Kvar enligt budget', value: kr(kvarPlan), tone: kvarPlan >= 0 ? 'good' : 'bad' }] : [{ label: isLatest(cur) ? 'Inkomst hittills' : 'Inkomst', value: kr(m.innFakt) }, { label: 'Budget', value: kr(m.budget) }, { label: 'Utfall', value: kr(m.utfall) }, { label: 'Kvar efter sparande', value: kr(plus), tone: plus >= 0 ? 'good' : 'bad' }],
       grupper: m.grupper.map((g) => ({ namn: g.namn, rader: g.rader.map((r) => ({ namn: r.namn, budget: r.budget, utfall: r.utfall })) })),
       inkomst: m.innFakt, planerad: m.innPlan, budget: m.budget, sparat, sparmal: +m.b.spar || 0, oronmarkt: oronSum(m.b),
       top: m.top.slice(0, 6).map((t) => ({ datum: t.datum, text: t.text, kategori: t.kategori, belopp: t.belopp })),
-      noter: [urvalText('mitt'), ...noter(cur)],
+      noter: plan ? ['Planering för nästa period. Utfall kommer när lönen och kontoutdragen har kommit.', urvalText('mitt')] : [urvalText('mitt'), ...noter(cur)],
     });
-    saveFile(`Budget ${fileStamp(cur)}.pdf`, u8, 'PDF:en är sparad');
+    saveFile(plan ? `Budget planering ${planStart()}.pdf` : `Budget ${fileStamp(cur)}.pdf`, u8, 'PDF:en är sparad');
   });
 
   $('saveXlsx').addEventListener('click', () => {
     if (!cur) { toast('Läs in kontoutdrag först'); return; }
-    const m = model(cur, 'mitt'); const p = periodOf(cur);
+    const plan = !!state.ui.plan, EK = plan ? planKey() : cur;
+    const m = model(EK, 'mitt'); const p = periodOf(cur);
+    if (plan) { m.innFakt = 0; m.innPlan = m.b.inc != null ? m.b.inc : r0(autoIncome(cur)); }
     // Blad 1: Budget
     const rows = [], merges = ['A1:F1', 'A2:F2'], heights = { 0: 30 };
     rows.push([{ v: 'Budget', s: 'title' }]);
-    rows.push([{ v: `${periodLabel(p, true)}. ${urvalText('mitt')} Skapad ${today()}.`, s: 'sub' }]);
+    rows.push([{ v: `${plan ? `Planering för nästa period, från lönen runt ${dLong(planStart())}` : periodLabel(p, true)}. ${urvalText('mitt')} Skapad ${today()}.`, s: 'sub' }]);
     rows.push([]);
     const rInc = rows.length + 1; rows.push([{ v: 'Inkomst', s: 'b' }, { v: isLatest(cur) ? 'Lön och bidrag som kommit in hittills' : 'Lön och bidrag i perioden', s: 'note' }, { v: m.innFakt, s: 'krBig' }]);
     const rPlan = rows.length + 1; rows.push([{ v: 'Planerad inkomst', s: 'b' }, { v: 'Inkomst enligt budgeten', s: 'note' }, { v: m.innPlan, s: 'krBig' }]);
@@ -2517,7 +2548,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     bl.forEach((x, i) => { const rn = br.length + 1; br.push([{ v: mLabel(x.man) }, { v: x.saldo, s: 'kr' }, i ? { f: `B${rn}-B${rn - 1}`, v: x.saldo - bl[i - 1].saldo, s: x.saldo - bl[i - 1].saldo < 0 ? 'krRed' : 'krGreen' } : { v: '', s: 'n' }]); });
     const shBuf = { name: 'Buffert', cols: [18, 16, 16], rows: br, merges: ['A1:C1', 'A2:C2'], heights: { 0: 30 } };
     const u8 = XlsxW.build(bl.length ? [shBudget, shPer, shBuf, shTx, shRules] : [shBudget, shPer, shTx, shRules]);
-    saveFile(`Kassabok ${fileStamp(cur)}.xlsx`, u8, 'Excel-filen är sparad');
+    saveFile(plan ? `Kassabok planering ${planStart()}.xlsx` : `Kassabok ${fileStamp(cur)}.xlsx`, u8, 'Excel-filen är sparad');
   });
 
   // ---------- Import och konton ----------
