@@ -406,6 +406,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   <section id="oversikt">
     <div id="ovEmpty"></div>
     <div id="ovBody">
+      <div class="seg" role="group" aria-label="Vy" style="margin-bottom:8px"><button type="button" data-vy="mitt" aria-pressed="true">Min ekonomi</button><button type="button" data-vy="hushall" aria-pressed="false">Hushållet</button></div>
       <div class="strip" id="ovStrip"></div>
       <div id="staleNotice"></div>
       <h3 class="c-in">Resultat för perioden</h3>
@@ -414,7 +415,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
         <div class="lr"><span>Utgifter</span><b id="eqUt">0</b></div>
         <div class="lr spar"><span id="eqSpK">Till sparande</span><b id="eqSp">0</b></div>
         <div class="lr res" id="eqResBox"><span id="eqResK">Kvar</span><b id="eqRes">0</b></div>
-        <div class="hint" style="margin:6px 0 0">Kvar är hur mycket pengarna på ditt konto ökat eller minskat under perioden.</div>
+        <div class="hint" id="kvarHint" style="margin:6px 0 0">Kvar är hur mycket pengarna på ditt konto ökat eller minskat under perioden.</div>
         <div class="prog" id="eqProg"></div>
       </div>
       <h3 class="c-fast">Vart pengarna gick</h3>
@@ -439,7 +440,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       <details class="help" style="margin-top:16px">
         <summary>Hur läser jag översikten?</summary>
         <ul>
-          <li>Översikten visar <b>din ekonomi</b>: dina egna konton. Det gemensamma kontot har en egen flik.</li>
+          <li><b>Min ekonomi</b> visar dina egna konton. <b>Hushållet</b> visar ditt konto och gemensamt tillsammans, med alla kostnader per kategori. Växla högst upp.</li>
           <li>Det du för över till gemensamt räknas som kostnaden <b>Gemensamt konto</b>, oavsett vad pengarna sedan används till.</li>
           <li>Sparande är ingen utgift, men pengarna lämnar ditt konto. Därför står det som en egen rad och dras av innan <b>Kvar</b>. Kvar stämmer med hur mycket saldot på ditt konto ändrats.</li>
           <li><b>Prognosen</b> räknar med att du håller budgeten resten av perioden.</li>
@@ -494,6 +495,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   <!-- BUDGET -->
   <section id="budget" hidden>
     <h2>Budget och utfall</h2>
+    <div class="seg" role="group" aria-label="Vy" style="margin-bottom:8px"><button type="button" data-vy="mitt" aria-pressed="true">Min ekonomi</button><button type="button" data-vy="hushall" aria-pressed="false">Hushållet</button></div>
     <div class="seg" role="group" aria-label="Vilken period">
       <button type="button" data-bmode="nu" aria-pressed="true">Perioden nu</button>
       <button type="button" data-bmode="plan" aria-pressed="false">Planera nästa lön</button>
@@ -561,6 +563,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       <div class="seg" role="group" aria-label="Urval">
         <button type="button" data-yscope="mitt" aria-pressed="true">Min ekonomi</button>
         <button type="button" data-yscope="gemensamt" aria-pressed="false">Gemensamt</button>
+        <button type="button" data-yscope="hushall" aria-pressed="false">Hushållet</button>
       </div>
     </div>
     <div class="strip" id="yStrip"></div>
@@ -651,6 +654,17 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       <li>Butiker med olika sorters köp, som en mack eller en matbutik: välj Annat och Fråga mig varje gång. Då hamnar de alltid i Sortera.</li>
       <li>Engångskostnader räknas inte in i budgetförslagen, så ett stort köp gör inte nästa månads budget högre.</li>
       <li>Du kan alltid ändra en post i efterhand under Alla poster. Appens förslag tar dig tillbaka till det automatiska.</li>
+    </ul></details>
+
+    <h3 class="c-in">Två vyer</h3>
+    <ul class="hlist">
+      <li><b>Min ekonomi:</b> ditt eget konto. Det du för över till gemensamt är en rad, Gemensamt konto. Visar hur dina egna pengar räcker.</li>
+      <li><b>Hushållet:</b> ditt konto och gemensamt tillsammans, med alla kostnader per kategori som de betalats, till exempel bilen, elen och maten. Har en egen budget.</li>
+    </ul>
+    <details class="help"><summary>Läs mer</summary><ul>
+      <li>I Hushållet räknas överföringarna mellan ditt konto och gemensamt bort, eftersom pengarna bara flyttas inom hushållet.</li>
+      <li>Inkomsten i Hushållet är din inkomst plus det sambon sätter in på gemensamt.</li>
+      <li>Ingen av vyerna bygger på procent eller uppskattningar. Båda räknar bara verkliga betalningar.</li>
     </ul></details>
 
     <h3 class="c-fast">Det sköter appen själv</h3>
@@ -1207,7 +1221,12 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
 
   // ---------- Summeringar ----------
   // Två separata vyer: 'mitt' = dina egna konton, 'gemensamt' = bara det gemensamma kontot. Ingen procent.
-  function inScope(t, scope) { return scope === 'gemensamt' ? t.kontotyp === 'gemensamt' : (t.kontotyp !== 'gemensamt' && t.kontotyp !== 'spar'); }
+  function inScope(t, scope) {
+    if (scope === 'gemensamt') return t.kontotyp === 'gemensamt';
+    // Hushållet: ditt konto och gemensamt tillsammans. Överföringar mellan dem räknas bort.
+    if (scope === 'hushall') return t.kontotyp !== 'spar' && !t.overforing;
+    return t.kontotyp !== 'gemensamt' && t.kontotyp !== 'spar';
+  }
   function summarize(all, periodKey, scope) {
     return summarizeTx(all.filter((t) => t.period === periodKey), scope);
   }
@@ -1507,14 +1526,14 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     // Inkomst och plus
     need(124);
     const sp = m.sparat || 0;
-    const rows = [['Inkomst', m.inkomst], ['Utgifter', -tU], [sp >= 0 ? 'Till sparande' : 'Uttag från sparande', -sp], ['Kvar efter sparande', m.inkomst - tU - sp]];
+    const rows = m.plan ? [] : [['Inkomst', m.inkomst], ['Utgifter', -tU], [sp >= 0 ? 'Till sparande' : 'Uttag från sparande', -sp], ['Kvar efter sparande', m.inkomst - tU - sp]];
     if (m.planerad != null) rows.push(['Enligt budget: planerad inkomst ' + kr(m.planerad) + ' minus budget' + (m.sparmal ? ' och sparmål ' + kr(m.sparmal) : ''), m.planerad - (m.budget != null ? m.budget : tB) - (m.sparmal || 0)]);
     if ((m.sparmal || 0) + (m.oronmarkt || 0) > 0) rows.push(['Att föra över till sparkonton: sparmål ' + kr(m.sparmal || 0) + (m.oronmarkt ? ' och öronmärkt ' + kr(m.oronmarkt) + ', som ingår i budgeten' : ''), (m.sparmal || 0) + (m.oronmarkt || 0)]);
     rows.forEach((r, i) => {
-      const sum = i === 3;
+      const sum = !m.plan && i === 3;
       d.text(L + 6, y - 10, r[0], { size: 10, bold: sum, maxW: cK - L - 90 });
-      d.text(cK, y - 10, kr(r[1]), { size: 10, bold: sum, align: 'right', color: sum ? (r[1] < 0 ? C.red : C.pine) : (i === 4 && r[1] < 0 ? C.red : C.ink) });
-      if (i === 2) d.line(L, y - 15, R, y - 15, C.ink, 1); else if (i !== 3) d.line(L, y - 15, R, y - 15, C.line, 0.4);
+      d.text(cK, y - 10, kr(r[1]), { size: 10, bold: sum, align: 'right', color: sum ? (r[1] < 0 ? C.red : C.pine) : (((m.plan && i === 0) || i === 4) && r[1] < 0 ? C.red : C.ink) });
+      if (!m.plan && i === 2) d.line(L, y - 15, R, y - 15, C.ink, 1); else if (m.plan || i !== 3) d.line(L, y - 15, R, y - 15, C.line, 0.4);
       y -= 18;
     });
     y -= 16;
@@ -1574,12 +1593,12 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
 
   function defaults() {
     return {
-      tx: {}, overrides: {}, regler: [], konton: {}, budgets: {}, scope: 'mitt', valdPeriod: null,
+      tx: {}, overrides: {}, regler: [], konton: {}, budgets: {}, budgetsHH: {}, scope: 'mitt', valdPeriod: null,
       settings: { minLon: 10000, startdag: 25, egetNamn: '', bufNamn: 'Buffertkonto' },
-      ui: { sscope: 'period', ymode: 'lon', yscope: 'mitt', fordela: false, regelVidSort: true, senaste: [], butik: {}, ejGem: {}, plan: false, jamfor: true }, buffert: [], alias: {}, imports: [], egna: [], schema: 7,
+      ui: { sscope: 'period', ymode: 'lon', yscope: 'mitt', vy: 'mitt', fordela: false, regelVidSort: true, senaste: [], butik: {}, ejGem: {}, plan: false, jamfor: true }, buffert: [], alias: {}, imports: [], egna: [], schema: 8,
     };
   }
-  const SCHEMA = 7;
+  const SCHEMA = 8;
   // Validera och migrera sparad data. Kastar fel om datan inte går att använda.
   function normalize(s) {
     if (!s || typeof s !== 'object' || Array.isArray(s)) throw new Error('Ingen giltig data');
@@ -1621,17 +1640,23 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     out.settings = Object.assign(d.settings, out.settings && typeof out.settings === 'object' ? out.settings : {});
     out.ui = Object.assign(d.ui, out.ui && typeof out.ui === 'object' ? out.ui : {});
     // Budgetar: v1 sparade på periodens startdatum, v2 på periodens id (månad)
+    const normBud = (src) => {
     const bud = {};
-    Object.entries(out.budgets && typeof out.budgets === 'object' ? out.budgets : {}).forEach(([k, b]) => {
-      if (!b || typeof b !== 'object' || typeof b.cats !== 'object') return;
-      const id = /^\d{4}-\d{2}-\d{2}$/.test(k) ? K.periodId(k) : k;
-      if (bud[id]) return;
-      bud[id] = { andrade: b.andrade && typeof b.andrade === 'object' ? b.andrade : {}, spar: Number.isFinite(b.spar) ? b.spar : null, oron: Array.isArray(b.oron) ? b.oron.filter((o) => o && K.CAT[o.cat] && Number.isFinite(+o.belopp)).map((o) => ({ cat: o.cat, belopp: +o.belopp })) : [], inc: Number.isFinite(b.inc) ? b.inc : null, cats: Object.fromEntries(Object.entries(b.cats).filter(([c, v]) => K.CAT[c] && Number.isFinite(+v)).map(([c, v]) => [c, +v])), oneoffs: Array.isArray(b.oneoffs) ? b.oneoffs.filter((o) => o && typeof o === 'object').map((o) => ({ text: String(o.text || ''), belopp: +o.belopp || 0 })).filter((o) => o.text.trim() || o.belopp) : [], ursprung: typeof b.ursprung === 'string' ? b.ursprung : '' };
-    });
-    if (!s.schema || s.schema < 3) Object.values(bud).forEach((b) => { b.ursprung = 'Gjord med det gamla upplägget, där gemensamma kostnader räknades med din andel. Se över Gemensamt konto, Boende, Mat och Bil, eller tryck Fyll med rekommenderat.'; });
+      Object.entries(src && typeof src === 'object' ? src : {}).forEach(([k, b]) => {
+        if (!b || typeof b !== 'object' || typeof b.cats !== 'object') return;
+        const id = /^\d{4}-\d{2}-\d{2}$/.test(k) ? K.periodId(k) : k;
+        if (bud[id]) return;
+        bud[id] = { andrade: b.andrade && typeof b.andrade === 'object' ? b.andrade : {}, spar: Number.isFinite(b.spar) ? b.spar : null, oron: Array.isArray(b.oron) ? b.oron.filter((o) => o && K.CAT[o.cat] && Number.isFinite(+o.belopp)).map((o) => ({ cat: o.cat, belopp: +o.belopp })) : [], inc: Number.isFinite(b.inc) ? b.inc : null, cats: Object.fromEntries(Object.entries(b.cats).filter(([c, v]) => K.CAT[c] && Number.isFinite(+v)).map(([c, v]) => [c, +v])), oneoffs: Array.isArray(b.oneoffs) ? b.oneoffs.filter((o) => o && typeof o === 'object').map((o) => ({ text: String(o.text || ''), belopp: +o.belopp || 0 })).filter((o) => o.text.trim() || o.belopp) : [], ursprung: typeof b.ursprung === 'string' ? b.ursprung : '' };
+      });
+      if (!s.schema || s.schema < 3) Object.values(bud).forEach((b) => { b.ursprung = 'Gjord med det gamla upplägget, där gemensamma kostnader räknades med din andel. Se över Gemensamt konto, Boende, Mat och Bil, eller tryck Fyll med rekommenderat.'; });
+    return bud;
+    };
+    const bud = normBud(out.budgets);
+    out.budgetsHH = normBud(out.budgetsHH);
     out.budgets = bud;
     if (out.scope !== 'mitt') out.scope = 'mitt';
-    if (out.ui.yscope !== 'gemensamt') out.ui.yscope = 'mitt';
+    if (!['gemensamt', 'hushall'].includes(out.ui.yscope)) out.ui.yscope = 'mitt';
+    if (out.ui.vy !== 'hushall') out.ui.vy = 'mitt';
     if (!s.schema || s.schema < 4) out.ui.fordela = true;
     if (!out.ui.ejGem || typeof out.ui.ejGem !== 'object') out.ui.ejGem = {};
     out.ui.senaste = (Array.isArray(out.ui.senaste) ? out.ui.senaste : []).filter((c) => K.CAT[c] && c !== 'engang' && c !== 'okant').slice(0, 8);
@@ -1698,11 +1723,15 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   const lastDataDate = () => all.filter((t) => t.kontotyp !== 'gemensamt' && t.kontotyp !== 'spar').reduce((m, t) => (t.datum > m ? t.datum : m), '');
   const isStale = () => { const d = lastDataDate(); return !!d && daysBetween(d, today()) > 7; };
   const typicalLen = () => { const l = pers.filter((p) => p.slut).map((p) => daysBetween(p.start, p.slut) + 1).sort((a, c) => a - c); return l.length ? l[Math.floor(l.length / 2)] : 30; };
+  // Vy i Översikt och Budget: din ekonomi eller hushållet, med var sin budget
+  const VY = () => (state.ui.vy === 'hushall' ? 'hushall' : 'mitt');
+  const BUD = () => (VY() === 'hushall' ? state.budgetsHH : state.budgets);
   const kontoNamn = (typ) => Object.keys(state.konton).filter((n) => (state.konton[n].typ === 'gemensamt') === (typ === 'gemensamt')).sort();
 
   function urvalText(scope) {
     const egna = kontoNamn('mitt'), gem = kontoNamn('gemensamt');
     if (scope === 'gemensamt') return `Bara det gemensamma kontot (${gem.join(', ') || 'inget inläst'}).`;
+    if (scope === 'hushall') return `Hushållet: ${[...egna, ...gem].join(', ') || 'dina konton'}. Överföringar mellan dem räknas bort. Inkomst är din inkomst plus sambons insättningar.`;
     return `Din ekonomi: ${egna.join(', ') || 'dina konton'}. Det du för över till gemensamt konto räknas som kostnad.`;
   }
   function strip(box, k, scope) {
@@ -1722,6 +1751,9 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   // på kategorier i samma proportioner som pengarna användes på gemensamt. Summan ändras aldrig.
   function sumList(list, scope) {
     const s = K.summarizeTx(list, scope);
+    // Hushållet: en överföring mellan ditt konto och gemensamt som korsar en periodgräns är pengar på väg.
+    // Den räknas med på raden för sparande, så att Kvar ändå stämmer med båda kontonas saldo i varje period.
+    if (scope === 'hushall') { const ids = new Set(list.map((t) => t.id)); list.forEach((t) => { if (t.overforing && t.kontotyp !== 'spar' && !ids.has(t.par)) s.sums.sparande = (s.sums.sparande || 0) + t.belopp; }); }
     if (scope === 'mitt' && state.ui.fordela) {
       const G = -(s.sums.gemensamt || 0);
       if (G > 0) {
@@ -1733,7 +1765,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     }
     return s;
   }
-  const sumPeriod = (k, scope) => sumList(all.filter((t) => t.period === k), scope || 'mitt');
+  const sumPeriod = (k, scope) => sumList(all.filter((t) => t.period === k), scope || VY());
   function transferAvg(k) {
     const prev = pers.filter((p) => p.key < k).slice(-3).map((p) => -(K.summarize(all, p.key, 'mitt').sums.gemensamt || 0)).filter((v) => v > 0);
     return prev.length ? Math.round(prev.reduce((x, v) => x + v, 0) / prev.length / 100) * 100 : 0;
@@ -1747,20 +1779,20 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   // Rekommenderat: snittet av de tre senaste perioderna. Kategorier med tak (shopping, restaurang m.fl.) får högst sitt målvärde.
   let avgCache = { key: null, map: null };
   function avgMap(k) {
-    const sig = k + '|' + (state.ui.fordela ? 1 : 0) + '|' + all.length + '|' + Object.keys(state.overrides).length + '|' + state.regler.length;
+    const sig = VY() + '|' + k + '|' + (state.ui.fordela ? 1 : 0) + '|' + all.length + '|' + Object.keys(state.overrides).length + '|' + state.regler.length;
     if (avgCache.key === sig) return avgCache.map;
     const prev = pers.filter((p) => p.key < k && !isLatest(p.key)).slice(-6);
     let map = null;
-    if (prev.length) { map = {}; const ss = prev.map((p) => sumPeriod(p.key, 'mitt')); UT.forEach((c) => { map[c.id] = Math.max(0, Math.round(ss.reduce((x, s) => x - (s.sums[c.id] || 0), 0) / ss.length / 100) * 100); }); }
+    if (prev.length) { map = {}; const ss = prev.map((p) => sumPeriod(p.key, VY())); UT.forEach((c) => { map[c.id] = Math.max(0, Math.round(ss.reduce((x, s) => x - (s.sums[c.id] || 0), 0) / ss.length / 100) * 100); }); }
     avgCache = { key: sig, map }; return map;
   }
   function rekFor(c, k) {
-    if (c.id === 'gemensamt') return state.ui.fordela ? 0 : transferAvg(k);
+    if (c.id === 'gemensamt') return state.ui.fordela || VY() === 'hushall' ? 0 : transferAvg(k);
     if (['spel', 'okant', 'engang', 'krediter'].includes(c.id)) return 0;
     if (c.id === 'presenter' && k && /-12$/.test(k)) return Math.max(2000, (k ? avgMap(k) || {} : {})[c.id] || 0);
     const m = k ? avgMap(k) : null;
     if (!m) return c.rek || 0;
-    return c.tak ? Math.min(m[c.id], c.rek || 0) : m[c.id];
+    return c.tak && VY() === 'mitt' ? Math.min(m[c.id], c.rek || 0) : m[c.id];
   }
   function rekBudget(k) { const cats = {}; UT.forEach((c) => { if (c.id !== 'engang') cats[c.id] = rekFor(c, k); }); return { inc: null, cats, oneoffs: [], andrade: {}, spar: null, oron: [] }; }
   // Öronmärkt: budgeterade pengar som flyttas till sparkontot tills köpet kommer. Ingår i budgeten, räknas inte en gång till.
@@ -1770,7 +1802,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   // Brutto till och från sparande i en lista poster (egna konton)
   function sparFlows(list) {
     let D = 0, W = 0;
-    list.forEach((t) => { if (t.kat === 'sparande' && K.inScope(t, 'mitt')) { if (t.belopp < 0) D -= t.belopp; else W += t.belopp; } });
+    list.forEach((t) => { if (t.kat === 'sparande' && K.inScope(t, VY())) { if (t.belopp < 0) D -= t.belopp; else W += t.belopp; } });
     return { D: r0(D), W: r0(W) };
   }
   // Senaste bokförda saldo per konto, enligt kontoutdragets saldokolumn
@@ -1798,42 +1830,43 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     }
     return K.addDays(d, 30);
   }
-  function planStart() { const last = pers[pers.length - 1]; if (!last) return null; const g = K.addDays(last.start, typicalLen()); const t = today(); return g > t ? g : nextSalaryAfter(t); }
+  function planStart() { const last = pers[pers.length - 1]; if (!last) return null; const a = K.addDays(last.start, 20), t = today(); return nextSalaryAfter(a > t ? a : t); }
   function planKey() { const s = planStart(); return s ? K.periodId(s) : null; }
   function budgetFor(k, create) {
     if (!k) return rekBudget(k);
-    if (state.budgets[k]) return state.budgets[k];
+    const store = BUD();
+    if (store[k]) return store[k];
     let b;
-    const ks = pers.map((p) => p.key).filter((x) => x < k && state.budgets[x]);
+    const ks = pers.map((p) => p.key).filter((x) => x < k && store[x]);
     b = rekBudget(k); b.andrade = {}; b.spar = null;
     if (ks.length) {
-      const src = state.budgets[ks[ks.length - 1]];
+      const src = store[ks[ks.length - 1]];
       Object.keys(src.andrade || {}).forEach((id) => { if (src.cats[id] != null) { b.cats[id] = src.cats[id]; b.andrade[id] = true; } });
       if (src.spar != null) b.spar = src.spar;
       b.oron = (src.oron || []).map((o) => ({ cat: o.cat, belopp: o.belopp }));
       const n = Object.keys(b.andrade).length;
       b.ursprung = n ? `Rekommenderade belopp utifrån dina senaste perioder. ${n} ${n === 1 ? 'belopp' : 'belopp'} du själv satt följde med.` : 'Rekommenderade belopp utifrån dina senaste perioder.';
     } else b.ursprung = 'Rekommenderade belopp utifrån dina senaste perioder.';
-    if (create) state.budgets[k] = b;
+    if (create) store[k] = b;
     return b;
   }
   const oneoffSum = (b) => b.oneoffs.reduce((s, o) => s + (+o.belopp || 0), 0);
-  function catBudget(b, id) { if (id === 'engang') return oneoffSum(b); if (id === 'gemensamt' && state.ui.fordela) return 0; return +b.cats[id] || 0; }
+  function catBudget(b, id) { if (id === 'engang') return oneoffSum(b); if (id === 'gemensamt' && (state.ui.fordela || VY() === 'hushall')) return 0; return +b.cats[id] || 0; }
   function budgetTotal(b) { return UT.reduce((s, c) => s + catBudget(b, c.id), 0); }
   function autoIncome(k) {
-    const s = k ? K.summarize(all, k, 'mitt') : null;
+    const s = k ? K.summarize(all, k, VY()) : null;
     if (s && s.inn > 0) return s.inn;
     const p = prevKey(k);
-    return p ? K.summarize(all, p, 'mitt').inn : 0;
+    return p ? K.summarize(all, p, VY()).inn : 0;
   }
   function incomeFor(k) { const b = budgetFor(k, false); return b.inc != null ? b.inc : r0(autoIncome(k)); }
 
   // ---------- Modell ----------
   function model(k, scope) {
-    scope = scope || 'mitt';
+    scope = scope || VY();
     const s = sumPeriod(k, scope);
     const b = budgetFor(k, false);
-    const mitt = scope === 'mitt';
+    const mitt = scope !== 'gemensamt';
     const grupper = K.GRUPPER.map((g) => {
       const rader = UT.filter((c) => c.grupp === g.id).map((c) => ({ id: c.id, namn: c.namn, besk: c.besk, budget: mitt ? catBudget(b, c.id) : 0, utfall: r0(-(s.sums[c.id] || 0)) }))
         .filter((r) => r.budget > 0 || Math.abs(r.utfall) >= 1);
@@ -1940,7 +1973,9 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       empty.appendChild(e); return;
     }
     body.hidden = false;
-    const scope = 'mitt', mitt = true;
+    const scope = VY(), mitt = true;
+    document.querySelectorAll('[data-vy]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.vy === scope)));
+    $('kvarHint').textContent = scope === 'hushall' ? 'Kvar är hur mycket pengarna på ditt konto och gemensamt tillsammans ökat eller minskat under perioden.' : 'Kvar är hur mycket pengarna på ditt konto ökat eller minskat under perioden.';
     strip($('ovStrip'), cur, scope);
     const m = model(cur, scope);
     const sparat = r0(-(m.s.sums.sparande || 0));
@@ -1963,7 +1998,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     }
     const bb = budgetFor(cur, false); const T2 = (+bb.spar || 0) + oronSum(bb);
     if (T2) { const f2 = sparFlows(all.filter((t) => t.period === cur)); prog.append(el('div', null, `Att föra över till sparkonton: ${kr(T2)}${oronSum(bb) ? ` (sparmål ${kr(+bb.spar || 0)} och öronmärkt ${kr(oronSum(bb))})` : ''}. Fört över hittills ${kr(f2.D)}${f2.W ? `, uttag ${kr(f2.W)}` : ''}.`)); }
-    const saldon = kontoNamn('mitt').filter((n) => state.konton[n].typ !== 'spar').map((n) => [n, lastSaldo(n)]).filter(([, x]) => x);
+    const saldon = [...kontoNamn('mitt'), ...(scope === 'hushall' ? kontoNamn('gemensamt') : [])].filter((n) => state.konton[n].typ !== 'spar').map((n) => [n, lastSaldo(n)]).filter(([, x]) => x);
     if (saldon.length) prog.append(el('div', 'hint', saldon.map(([n, x]) => `Saldo på ${n}: ${kr(x.saldo)} den ${dShort(x.datum)}`).join('. ') + '. Bokfört enligt senaste kontoutdraget.'));
     if (!kontoNamn('gemensamt').length) prog.append(el('div', 'hint', 'Inget gemensamt konto är inläst. Överföringar dit kan då inte skiljas från sparande.'));
     else if (!all.some((t) => t.period === cur && t.kontotyp === 'gemensamt')) prog.append(el('div', 'hint', 'Gemensamt konto saknar poster för perioden. Läs in det, annars ser överföringar dit ut som sparande.'));
@@ -2053,6 +2088,8 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     const no = el('button', 'btn small', 'Nej'); no.type = 'button'; no.addEventListener('click', () => { state.ui.ejGem = state.ui.ejGem || {}; state.ui.ejGem[n] = true; save(); refresh(); });
     const w = el('span'); w.style.cssText = 'display:flex;gap:6px'; w.append(y, no); d.appendChild(w); box.appendChild(d);
   }
+
+  document.querySelectorAll('[data-vy]').forEach((x) => x.addEventListener('click', () => { state.ui.vy = x.dataset.vy === 'hushall' ? 'hushall' : 'mitt'; save(); if (currentTab() === 'budget') renderBudget(); else renderOverview(); }));
 
   // ---------- Gemensamt (egen vy) ----------
   function renderJoint() {
@@ -2271,21 +2308,22 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     const plan = !!state.ui.plan, BK = bk();
     document.querySelectorAll('[data-bmode]').forEach((x) => x.setAttribute('aria-pressed', String((x.dataset.bmode === 'plan') === plan)));
     if (plan) { $('bStrip').textContent = ''; $('bStrip').append(frag([B('Planering '), `nästa period, som börjar med lönen runt ${dLong(planStart())}. Utfall finns när lönen och kontoutdragen har kommit.`])); }
-    else strip($('bStrip'), cur, 'mitt');
-    if ((plan || isLatest(cur)) && !state.budgets[BK]) { budgetFor(BK, true); save(); }
+    else strip($('bStrip'), cur, VY());
+    document.querySelectorAll('[data-vy]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.vy === VY())));
+    if ((plan || isLatest(cur)) && !BUD()[BK]) { budgetFor(BK, true); save(); }
     const b = budgetFor(BK, false);
     const prev = plan ? cur : prevKey(cur);
-    const sPrev = prev ? sumPeriod(prev, 'mitt') : null;
-    const sCur = plan ? { sums: {}, inn: 0, ut: 0 } : sumPeriod(cur, 'mitt');
-    $('bOrigin').textContent = state.budgets[BK] ? (b.ursprung ? `Budgetens ursprung: ${b.ursprung}` : 'Budget sparad för perioden.') : 'Ingen budget sparad för perioden. Visar ett förslag som sparas när du ändrar något.';
+    const sPrev = prev ? sumPeriod(prev, VY()) : null;
+    const sCur = plan ? { sums: {}, inn: 0, ut: 0 } : sumPeriod(cur, VY());
+    $('bOrigin').textContent = BUD()[BK] ? (b.ursprung ? `Budgetens ursprung: ${b.ursprung}` : 'Budget sparad för perioden.') : 'Ingen budget sparad för perioden. Visar ett förslag som sparas när du ändrar något.';
     $('budget').classList.toggle('cmp-on', !!state.ui.jamfor); $('bCmp').checked = !!state.ui.jamfor;
-    $('bFordelat').textContent = 'Det du för över till gemensamt är en egen rad, Gemensamt konto. Övriga kategorier gäller det du betalar från ditt eget konto. Vad pengarna på gemensamt gick till ser du i fliken Gemensamt.';
+    $('bFordelat').textContent = VY() === 'hushall' ? 'Hushållets budget: allt som betalas från ditt konto och gemensamt, med hela beloppen. Överföringar mellan kontona räknas inte. Inkomst är din inkomst plus sambons insättningar.' : 'Det du för över till gemensamt är en egen rad, Gemensamt konto. Övriga kategorier gäller det du betalar från ditt eget konto. Vad pengarna på gemensamt gick till ser du i fliken Gemensamt, eller i vyn Hushållet.';
     $('bInc').value = plan ? (b.inc != null ? b.inc : r0(autoIncome(cur))) : incomeFor(cur);
-    $('incHint').textContent = plan ? 'Förifyllt med inkomsten i perioden som pågår' : `Har kommit in hittills: ${kr(sCur.inn)}`;
+    $('incHint').textContent = (VY() === 'hushall' ? 'Din inkomst plus sambons insättningar. ' : '') + (plan ? 'Förifyllt med inkomsten i perioden som pågår' : `Har kommit in hittills: ${kr(sCur.inn)}`);
     $('bSpar').value = b.spar != null ? b.spar : '';
     sparFlow = plan ? { D: 0, W: 0 } : sparFlows(all.filter((t) => t.period === cur)); renderOron(b); updSpar();
     K.GRUPPER.forEach((g) => {
-      const cats = UT.filter((c) => c.grupp === g.id && c.id !== 'engang' && !(c.id === 'gemensamt' && state.ui.fordela));
+      const cats = UT.filter((c) => c.grupp === g.id && c.id !== 'engang' && !(c.id === 'gemensamt' && (state.ui.fordela || VY() === 'hushall') && Math.abs(sCur.sums.gemensamt || 0) < 1));
       if (!cats.length) return;
       const gp = el('div', 'gpanel g-' + g.id);
       const h = el('h3'); h.append(g.namn); const hs = el('span'); h.appendChild(hs); gp.appendChild(h);
@@ -2407,7 +2445,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     if (!bs.length) { yStrip.textContent = 'Läs in kontoutdrag först.'; return; }
     yStrip.append(frag([B('Indelning '), mode === 'manad' ? 'kalendermånad' : 'lön till lön', `, ${bs[0].label} till ${bs[bs.length - 1].label}.`]), el('br'), frag([B('Urval '), urvalText(scope)]));
     if (scope === 'gemensamt') { const ai = andelInfo(bs.flatMap((x) => x.tx)); if (ai.pct != null) yStrip.append(el('br'), frag([B('Din andel '), `Du stod för ${ai.pct} % av insättningarna, ${kr(ai.mig)} av ${kr(ai.mig + ai.ovr)}.`])); }
-    const sp = (b) => (scope === 'mitt' ? -(b.s.sums.sparande || 0) : 0);
+    const sp = (b) => (scope !== 'gemensamt' ? -(b.s.sums.sparande || 0) : 0);
     const kv = (b) => b.s.inn - b.s.ut - sp(b);
     const closed = bs.filter((b) => !b.pagar);
     const res = closed.map(kv);
@@ -2465,7 +2503,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
         state.egna.splice(i, 1);
         Object.keys(state.overrides).forEach((k) => { if (state.overrides[k] === c.id) delete state.overrides[k]; });
         state.regler = state.regler.filter((r) => r.c !== c.id);
-        Object.values(state.budgets).forEach((bb) => { delete bb.cats[c.id]; });
+        [...Object.values(state.budgets), ...Object.values(state.budgetsHH || {})].forEach((bb) => { delete bb.cats[c.id]; });
         state.ui.senaste = state.ui.senaste.filter((v) => v !== c.id);
         save(); refresh();
       });
@@ -2513,31 +2551,33 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   $('savePdf').addEventListener('click', () => {
     if (!cur) { toast('Läs in kontoutdrag först'); return; }
     const plan = !!state.ui.plan, EK = plan ? planKey() : cur;
-    const m = model(EK, 'mitt'); const p = periodOf(cur);
+    const V = VY(), HH = V === 'hushall';
+    const m = model(EK, V); const p = periodOf(cur);
     if (plan) { m.innFakt = 0; m.innPlan = m.b.inc != null ? m.b.inc : r0(autoIncome(cur)); }
     const sparat = r0(-(m.s.sums.sparande || 0));
     const plus = m.innFakt - m.utfall - sparat;
     const kvarPlan = m.innPlan - m.budget - (+m.b.spar || 0);
     const u8 = PdfW.report({
-      titel: plan ? 'Budget, planering' : 'Budget', period: plan ? `Nästa period, från lönen runt ${dLong(planStart())}` : periodLabel(p, true), omfang: 'Din ekonomi', skapad: today(),
+      titel: plan ? 'Budget, planering' : 'Budget', period: plan ? `Nästa period, från lönen runt ${dLong(planStart())}` : periodLabel(p, true), omfang: HH ? 'Hushållet' : 'Din ekonomi', skapad: today(), plan,
       kort: plan ? [{ label: 'Planerad inkomst', value: kr(m.innPlan) }, { label: 'Budget', value: kr(m.budget) }, { label: 'Sparmål', value: kr(+m.b.spar || 0) }, { label: 'Kvar enligt budget', value: kr(kvarPlan), tone: kvarPlan >= 0 ? 'good' : 'bad' }] : [{ label: isLatest(cur) ? 'Inkomst hittills' : 'Inkomst', value: kr(m.innFakt) }, { label: 'Budget', value: kr(m.budget) }, { label: 'Utfall', value: kr(m.utfall) }, { label: 'Kvar efter sparande', value: kr(plus), tone: plus >= 0 ? 'good' : 'bad' }],
       grupper: m.grupper.map((g) => ({ namn: g.namn, rader: g.rader.map((r) => ({ namn: r.namn, budget: r.budget, utfall: r.utfall })) })),
       inkomst: m.innFakt, planerad: m.innPlan, budget: m.budget, sparat, sparmal: +m.b.spar || 0, oronmarkt: oronSum(m.b),
       top: m.top.slice(0, 6).map((t) => ({ datum: t.datum, text: t.text, kategori: t.kategori, belopp: t.belopp })),
-      noter: plan ? ['Planering för nästa period. Utfall kommer när lönen och kontoutdragen har kommit.', urvalText('mitt')] : [urvalText('mitt'), ...noter(cur)],
+      noter: plan ? ['Planering för nästa period. Utfall kommer när lönen och kontoutdragen har kommit.', urvalText(V)] : [urvalText(V), ...noter(cur)],
     });
-    saveFile(plan ? `Budget planering ${planStart()}.pdf` : `Budget ${fileStamp(cur)}.pdf`, u8, 'PDF:en är sparad');
+    saveFile(`Budget${HH ? ' hushållet' : ''}${plan ? ` planering ${planStart()}` : ` ${fileStamp(cur)}`}.pdf`, u8, 'PDF:en är sparad');
   });
 
   $('saveXlsx').addEventListener('click', () => {
     if (!cur) { toast('Läs in kontoutdrag först'); return; }
     const plan = !!state.ui.plan, EK = plan ? planKey() : cur;
-    const m = model(EK, 'mitt'); const p = periodOf(cur);
+    const V = VY(), HH = V === 'hushall';
+    const m = model(EK, V); const p = periodOf(cur);
     if (plan) { m.innFakt = 0; m.innPlan = m.b.inc != null ? m.b.inc : r0(autoIncome(cur)); }
     // Blad 1: Budget
     const rows = [], merges = ['A1:F1', 'A2:F2'], heights = { 0: 30 };
     rows.push([{ v: 'Budget', s: 'title' }]);
-    rows.push([{ v: `${plan ? `Planering för nästa period, från lönen runt ${dLong(planStart())}` : periodLabel(p, true)}. ${urvalText('mitt')} Skapad ${today()}.`, s: 'sub' }]);
+    rows.push([{ v: `${plan ? `Planering för nästa period, från lönen runt ${dLong(planStart())}` : periodLabel(p, true)}. ${urvalText(V)} Skapad ${today()}.`, s: 'sub' }]);
     rows.push([]);
     const rInc = rows.length + 1; rows.push([{ v: 'Inkomst', s: 'b' }, { v: isLatest(cur) ? 'Lön och bidrag som kommit in hittills' : 'Lön och bidrag i perioden', s: 'note' }, { v: m.innFakt, s: 'krBig' }]);
     const rPlan = rows.length + 1; rows.push([{ v: 'Planerad inkomst', s: 'b' }, { v: 'Inkomst enligt budgeten', s: 'note' }, { v: m.innPlan, s: 'krBig' }]);
@@ -2584,7 +2624,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     const lastP = pers.slice(-12);
     const pr = [[{ v: 'Utfall per period', s: 'title' }], [{ v: 'Din ekonomi, de senaste perioderna. Belopp i kronor.', s: 'sub' }], []];
     pr.push([{ v: 'Kategori', s: 'head' }, ...lastP.map((x) => ({ v: dShort(x.start), s: 'headR' })), { v: 'Snitt', s: 'headR' }]);
-    const sums = lastP.map((x) => sumPeriod(x.key, 'mitt'));
+    const sums = lastP.map((x) => sumPeriod(x.key, V));
     const C = XlsxW.colName, nP = lastP.length;
     const incRow = pr.length + 1;
     pr.push([{ v: 'Inkomst', s: 'b' }, ...sums.map((s) => ({ v: r0(s.inn), s: 'kr' })), { f: `AVERAGE(B${incRow}:${C(nP)}${incRow})`, v: sums.reduce((x, s) => x + s.inn, 0) / Math.max(1, nP), s: 'kr' }]);
@@ -2621,7 +2661,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     bl.forEach((x, i) => { const rn = br.length + 1; br.push([{ v: mLabel(x.man) }, { v: x.saldo, s: 'kr' }, i ? { f: `B${rn}-B${rn - 1}`, v: x.saldo - bl[i - 1].saldo, s: x.saldo - bl[i - 1].saldo < 0 ? 'krRed' : 'krGreen' } : { v: '', s: 'n' }]); });
     const shBuf = { name: 'Buffert', cols: [18, 16, 16], rows: br, merges: ['A1:C1', 'A2:C2'], heights: { 0: 30 } };
     const u8 = XlsxW.build(bl.length ? [shBudget, shPer, shBuf, shTx, shRules] : [shBudget, shPer, shTx, shRules]);
-    saveFile(plan ? `Kassabok planering ${planStart()}.xlsx` : `Kassabok ${fileStamp(cur)}.xlsx`, u8, 'Excel-filen är sparad');
+    saveFile(`Kassabok${HH ? ' hushållet' : ''}${plan ? ` planering ${planStart()}` : ` ${fileStamp(cur)}`}.xlsx`, u8, 'Excel-filen är sparad');
   });
 
   // ---------- Import och konton ----------
