@@ -382,12 +382,20 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
 .bud .d.orn { color: var(--c-buf); }
 .out .warnt { color: var(--amber); font-weight: 600; }
 #oronBox .n { font-weight: 600; }
+
+/* v12: hjälpsida */
+.top-row { gap: 10px; }
+.helpbtn { display: inline-grid; place-items: center; width: 34px; height: 34px; flex: none; margin-left: auto; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--pine); font-weight: 700; text-decoration: none; }
+#hjalp .hlist { margin: 0 0 8px; padding-left: 22px; }
+#hjalp .hlist li { display: list-item; margin: 0 0 8px; line-height: 1.45; }
+#hjalp .hlist li::marker { color: var(--pine); font-weight: 700; }
 </style>
 </head>
 <body>
 <header class="top">
   <div class="top-row">
     <h1 class="brand">Kassabok</h1>
+    <a class="helpbtn" href="#hjalp" aria-label="Så använder du kassaboken">?</a>
     <select id="period" class="period" aria-label="Löneperiod"></select>
   </div>
 </header>
@@ -399,6 +407,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     <div id="ovEmpty"></div>
     <div id="ovBody">
       <div class="strip" id="ovStrip"></div>
+      <div id="staleNotice"></div>
       <h3 class="c-in">Resultat för perioden</h3>
       <div class="eq ledger">
         <div class="lr"><span>Inkomst</span><b id="eqIn">0</b></div>
@@ -411,7 +420,6 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       <h3 class="c-fast">Vart pengarna gick</h3>
       <div class="stack" id="stack" aria-hidden="true"></div>
       <div class="legend" id="legend"></div>
-      <div id="staleNotice"></div>
       <div id="jointWarn"></div>
       <div id="unknownNotice"></div>
       <div class="trust" id="trust"></div>
@@ -427,7 +435,6 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       </div>
       <h3 class="c-rorlig">Kuvert</h3>
       <p class="hint">Tryck på en grupp för att se kuverten.</p>
-      <label class="check" style="margin:0 0 6px"><input type="checkbox" id="ovFordela"><span>Fördela överföringen till gemensamt på boende, mat och övrigt. Summan ändras inte, och budgeten följer samma val.</span></label>
       <div id="groups"></div>
       <details class="help" style="margin-top:16px">
         <summary>Hur läser jag översikten?</summary>
@@ -436,7 +443,6 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
           <li>Det du för över till gemensamt räknas som kostnaden <b>Gemensamt konto</b>, oavsett vad pengarna sedan används till.</li>
           <li>Sparande är ingen utgift, men pengarna lämnar ditt konto. Därför står det som en egen rad och dras av innan <b>Kvar</b>. Kvar stämmer med hur mycket saldot på ditt konto ändrats.</li>
           <li><b>Prognosen</b> räknar med att du håller budgeten resten av perioden.</li>
-          <li>Kryssa i <b>Fördela</b> om du vill se överföringen uppdelad på boende, mat och annat, i samma proportioner som pengarna användes. Summan är densamma.</li>
           <li><b>Sorterat enligt regler eller av dig</b> är den del av utgifterna som inte bygger på gissningar.</li>
         </ul>
       </details>
@@ -505,7 +511,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
         <li>Skriv ett <b>sparmål</b> för det du sparar utöver budgeten, till exempel Lysa. Rutan längst ner visar vad som blir kvar efter budget och sparande.</li>
         <li><b>Öronmärkt</b> är pengar ur budgeten som du flyttar till sparkontot tills köpet kommer, till exempel bilservice och mediciner. Köpet sorterar du i rätt kategori, Bil eller Hälsa/apotek, och du tar pengarna från sparkontot. Inget räknas dubbelt.</li>
         <li><b>Engångskostnader</b> är för stora köp som inte återkommer, som barnvagn eller resa.</li>
-        <li>Gemensamma kostnader ingår redan med din del i Boende, Mat och övrigt. Du behöver inte räkna på överföringen.</li>
+        <li>Det du för över till gemensamt är en egen rad, <b>Gemensamt konto</b>. Vad pengarna gick till ser du i fliken Gemensamt.</li>
       </ol>
     </details>
     <h3 class="c-in">Inkomst</h3>
@@ -608,10 +614,72 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     </div>
   </section>
 
+  <!-- HJÄLP -->
+  <section id="hjalp" hidden>
+    <h2>Så använder du kassaboken</h2>
+    <p class="lead">Följ punkterna, så blir det rätt. Tryck på Läs mer för att se varför.</p>
+
+    <h3 class="c-in">Vid varje lön</h3>
+    <ol class="hlist">
+      <li><b>Läs in båda kontona.</b> Exportera ditt konto och gemensamt som Excel från Handelsbanken, från ungefär förra exportens slutdatum, och läs in dem under Importera.</li>
+    </ol>
+    <details class="help"><summary>Läs mer</summary><ul>
+      <li>Rader som redan finns hoppas över, så några dagars överlapp gör inget.</li>
+      <li>Båda kontona behövs för samma period. Annars kan appen inte se att en överföring till gemensamt är just det.</li>
+      <li>Översikt säger till om kontoutdragen är mer än en vecka gamla.</li>
+    </ul></details>
+    <ol class="hlist" start="2">
+      <li><b>Sortera det som behöver dig.</b> Det står under Sortera, med en gul symbol.</li>
+      <li><b>Kolla budgeten.</b> Tryck Fyll med rekommenderat om beloppen behöver uppdateras. Vill du planera nästa lön finns det högst upp i Budget.</li>
+      <li><b>Skriv in buffertsaldot</b> i Översikt.</li>
+      <li><b>Spara en säkerhetskopia</b> under Importera.</li>
+    </ol>
+    <details class="help"><summary>Läs mer</summary><ul>
+      <li>Förslagen i budgeten är snittet av dina senaste avslutade perioder. Shopping, restaurang och liknande får högst ett målvärde.</li>
+      <li>Belopp du själv ändrar följer med till nästa period.</li>
+      <li>Säkerhetskopian behövs om du byter telefon eller tar bort ikonen, eftersom allt bara sparas i telefonen.</li>
+    </ul></details>
+
+    <h3 class="c-rorlig">Sortera rätt, tre regler</h3>
+    <ol class="hlist">
+      <li><b>Allt i sin vanliga kategori</b>, även stora räkningar som kommer igen, som bilservice, däck och apotek.</li>
+      <li><b>Engångskostnader bara för stora saker som inte kommer igen</b>, som en renovering, en barnvagn eller en resa. Säljer du något sorterar du pengarna du får som Engångskostnader.</li>
+      <li><b>Klarna, Svea och liknande:</b> välj vad köpet var. De får aldrig en regel.</li>
+    </ol>
+    <details class="help"><summary>Läs mer</summary><ul>
+      <li>När rutan Skapa regel är ikryssad sorteras samma butik automatiskt nästa gång.</li>
+      <li>Butiker med olika sorters köp, som en mack eller en matbutik: välj Annat och Fråga mig varje gång. Då hamnar de alltid i Sortera.</li>
+      <li>Engångskostnader räknas inte in i budgetförslagen, så ett stort köp gör inte nästa månads budget högre.</li>
+      <li>Du kan alltid ändra en post i efterhand under Alla poster. Appens förslag tar dig tillbaka till det automatiska.</li>
+    </ul></details>
+
+    <h3 class="c-fast">Det sköter appen själv</h3>
+    <ul class="hlist">
+      <li><b>Till gemensamt</b> blir kostnaden Gemensamt konto.</li>
+      <li><b>Till och från dina andra konton</b>, som sparkonton och företagskonto, blir Sparande och egna konton.</li>
+      <li><b>Lön och barnbidrag</b> blir Inkomst.</li>
+      <li><b>Spel</b> räknas som utgift, netto efter vinster.</li>
+    </ul>
+
+    <h3 class="c-buf">Varför det inte kan bli dubbelt</h3>
+    <ul class="hlist">
+      <li>Varje rad i kontoutdragen räknas en gång.</li>
+      <li>En överföring mellan dina konton är ingen kostnad.</li>
+      <li><b>Kvar</b> är alltid hur saldot på ditt konto har ändrats.</li>
+    </ul>
+    <details class="help"><summary>Läs mer</summary><ul>
+      <li>Samma rad i två exporter känns igen på datum, text, belopp och saldo och hoppas över.</li>
+      <li>När samma belopp går ut från ett av dina konton och in på ett annat inom två dagar räknas båda sidor bort som överföring. Med eget meddelande, som en överföring märkt bil, gäller det mellan ditt konto och gemensamt samma dag eller dagen efter.</li>
+      <li>Det du för över till gemensamt räknas en gång i din ekonomi, som Gemensamt konto. Det som sedan betalas från gemensamt, som bolån, el och mat, syns bara i fliken Gemensamt. De två vyerna läggs aldrig ihop.</li>
+      <li>Sparande är ingen kostnad, men pengarna lämnar kontot. Därför dras det av innan Kvar. Uttag från sparkontot läggs tillbaka.</li>
+      <li>Kontroll: jämför Kvar med hur saldot i banken ändrats sedan lönen. Stämmer det är allt med.</li>
+    </ul></details>
+  </section>
+
   <!-- IMPORTERA -->
   <section id="konton" hidden>
     <h2>Importera</h2>
-    <p class="lead">Läs in kontoutdrag från Handelsbanken. Gör det vid varje lön, för alla konton.</p>
+    <p class="lead">Läs in kontoutdrag från Handelsbanken. Gör det vid varje lön, för alla konton. <a href="#hjalp">Så använder du kassaboken</a>.</p>
     <label class="drop" id="drop">
       <strong>Välj kontoutdrag</strong>
       <span>Excel-filer från Handelsbanken, flera på en gång går bra</span>
@@ -1065,7 +1133,13 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
         if (used.has(p.id) || p.konto === n.konto) continue;
         const dd = dayDiff(p.datum, n.datum); if (dd > 2) continue;
         const same = norm(p.text).toLowerCase() === norm(n.text).toLowerCase();
-        const ok = transferish(p) || transferish(n) || (same && !knownShop(p) && !knownShop(n));
+        // Eget meddelande, till exempel Vagn/bilstol: samma belopp ut från ditt konto och in på gemensamt (eller tvärtom) samma dag eller dagen efter.
+        // Gäller inte kända butiker, Swish till personer eller lön.
+        const plain = (t) => !knownShop(t) && t.auto !== 'swish' && t.auto !== 'lon' && t.auto !== 'bidrag';
+        const cross = (p.kontotyp === 'gemensamt') !== (n.kontotyp === 'gemensamt');
+        // Swish till eller från en person paras bara om texten är densamma, så att en Swish inte tas för en överföring
+        if ((p.auto === 'swish' || n.auto === 'swish') && !same) continue;
+        const ok = transferish(p) || transferish(n) || (same && !knownShop(p) && !knownShop(n)) || (cross && dd <= 1 && plain(p) && plain(n));
         if (!ok) continue;
         const score = (same ? 10 : 0) + (2 - dd);
         if (score > bestScore) { best = p; bestScore = score; }
@@ -1502,10 +1576,10 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     return {
       tx: {}, overrides: {}, regler: [], konton: {}, budgets: {}, scope: 'mitt', valdPeriod: null,
       settings: { minLon: 10000, startdag: 25, egetNamn: '', bufNamn: 'Buffertkonto' },
-      ui: { sscope: 'period', ymode: 'lon', yscope: 'mitt', fordela: true, regelVidSort: true, senaste: [], butik: {}, ejGem: {}, plan: false, jamfor: true }, buffert: [], alias: {}, imports: [], egna: [], schema: 6,
+      ui: { sscope: 'period', ymode: 'lon', yscope: 'mitt', fordela: false, regelVidSort: true, senaste: [], butik: {}, ejGem: {}, plan: false, jamfor: true }, buffert: [], alias: {}, imports: [], egna: [], schema: 7,
     };
   }
-  const SCHEMA = 6;
+  const SCHEMA = 7;
   // Validera och migrera sparad data. Kastar fel om datan inte går att använda.
   function normalize(s) {
     if (!s || typeof s !== 'object' || Array.isArray(s)) throw new Error('Ingen giltig data');
@@ -1562,6 +1636,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     if (!out.ui.ejGem || typeof out.ui.ejGem !== 'object') out.ui.ejGem = {};
     out.ui.senaste = (Array.isArray(out.ui.senaste) ? out.ui.senaste : []).filter((c) => K.CAT[c] && c !== 'engang' && c !== 'okant').slice(0, 8);
     if (!s.schema || s.schema < 6) out.ui.jamfor = true;
+    if (!s.schema || s.schema < 7) out.ui.fordela = false;
     if (!out.ui.butik || typeof out.ui.butik !== 'object') out.ui.butik = {};
     out.schema = SCHEMA;
     return out;
@@ -1866,7 +1941,6 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     }
     body.hidden = false;
     const scope = 'mitt', mitt = true;
-    $('ovFordela').checked = !!state.ui.fordela;
     strip($('ovStrip'), cur, scope);
     const m = model(cur, scope);
     const sparat = r0(-(m.s.sums.sparande || 0));
@@ -1962,7 +2036,6 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   }
   function showPosts(cat) { fStatus = 'alla'; $('fCat').value = cat; $('fAcc').value = ''; $('fSearch').value = ''; $('fScope').value = 'period'; location.hash = '#sortera'; setTimeout(() => { const h = $('txList'); if (h) h.scrollIntoView({ block: 'start' }); }, 60); }
 
-  $('ovFordela').addEventListener('change', () => { state.ui.fordela = $('ovFordela').checked; save(); renderOverview(); });
 
   function renderStale() {
     const box = $('staleNotice'); box.textContent = '';
@@ -2206,7 +2279,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     const sCur = plan ? { sums: {}, inn: 0, ut: 0 } : sumPeriod(cur, 'mitt');
     $('bOrigin').textContent = state.budgets[BK] ? (b.ursprung ? `Budgetens ursprung: ${b.ursprung}` : 'Budget sparad för perioden.') : 'Ingen budget sparad för perioden. Visar ett förslag som sparas när du ändrar något.';
     $('budget').classList.toggle('cmp-on', !!state.ui.jamfor); $('bCmp').checked = !!state.ui.jamfor;
-    $('bFordelat').textContent = state.ui.fordela ? 'Överföringen till gemensamt är fördelad på kategorierna. Budgetera Boende, Mat och övrigt som helhet: det du betalar själv plus din del av det gemensamma.' : 'Överföringen till gemensamt är en egen rad, Gemensamt konto. Övriga kategorier gäller bara det du betalar från egna konton.';
+    $('bFordelat').textContent = 'Det du för över till gemensamt är en egen rad, Gemensamt konto. Övriga kategorier gäller det du betalar från ditt eget konto. Vad pengarna på gemensamt gick till ser du i fliken Gemensamt.';
     $('bInc').value = plan ? (b.inc != null ? b.inc : r0(autoIncome(cur))) : incomeFor(cur);
     $('incHint').textContent = plan ? 'Förifyllt med inkomsten i perioden som pågår' : `Har kommit in hittills: ${kr(sCur.inn)}`;
     $('bSpar').value = b.spar != null ? b.spar : '';
@@ -2668,7 +2741,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
 
 
   // ---------- Navigering ----------
-  const TABS = ['oversikt', 'sortera', 'budget', 'ar', 'gemensamt', 'konton'];
+  const TABS = ['oversikt', 'sortera', 'budget', 'ar', 'gemensamt', 'konton', 'hjalp'];
   function currentTab() { const h = (location.hash || '').replace('#', ''); return TABS.includes(h) ? h : 'oversikt'; }
   function route() {
     const tab = currentTab();
