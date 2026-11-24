@@ -389,6 +389,14 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
 #hjalp .hlist { margin: 0 0 8px; padding-left: 22px; }
 #hjalp .hlist li { display: list-item; margin: 0 0 8px; line-height: 1.45; }
 #hjalp .hlist li::marker { color: var(--pine); font-weight: 700; }
+
+/* v14: resultat före sparande */
+.eq.ledger .lr.resf { border-bottom: 1px solid var(--ink); }
+.eq.ledger .lr.resf span, .eq.ledger .lr.resf b { font-weight: 700; }
+.eq.ledger .lr.resf b { color: var(--pine); }
+.eq.ledger .lr.resf.neg b { color: var(--red); }
+
+.eq.ledger .lr.spar.uttag b::before { content: "+\00a0"; }
 </style>
 </head>
 <body>
@@ -413,6 +421,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       <div class="eq ledger">
         <div class="lr"><span>Inkomst</span><b id="eqIn">0</b></div>
         <div class="lr"><span>Utgifter</span><b id="eqUt">0</b></div>
+        <div class="lr resf" id="eqResfBox"><span>Resultat före sparande</span><b id="eqResf">0</b></div>
         <div class="lr spar"><span id="eqSpK">Till sparande</span><b id="eqSp">0</b></div>
         <div class="lr res" id="eqResBox"><span id="eqResK">Kvar</span><b id="eqRes">0</b></div>
         <div class="hint" id="kvarHint" style="margin:6px 0 0">Kvar är hur mycket pengarna på ditt konto ökat eller minskat under perioden.</div>
@@ -443,6 +452,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
           <li><b>Min ekonomi</b> visar dina egna konton. <b>Hushållet</b> visar ditt konto och gemensamt tillsammans, med alla kostnader per kategori. Växla högst upp.</li>
           <li>Det du för över till gemensamt räknas som kostnaden <b>Gemensamt konto</b>, oavsett vad pengarna sedan används till.</li>
           <li>Sparande är ingen utgift, men pengarna lämnar ditt konto. Därför står det som en egen rad och dras av innan <b>Kvar</b>. Kvar stämmer med hur mycket saldot på ditt konto ändrats.</li>
+          <li><b>Resultat före sparande</b> är inkomst minus utgifter, periodens riktiga resultat. Har du tagit pengar från ett sparkonto syns det på raden under, och Kvar kan då bli nära noll trots ett minus.</li>
           <li><b>Prognosen</b> räknar med att du håller budgeten resten av perioden.</li>
           <li><b>Sorterat enligt regler eller av dig</b> är den del av utgifterna som inte bygger på gissningar.</li>
         </ul>
@@ -1524,16 +1534,16 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     y -= 34;
 
     // Inkomst och plus
-    need(124);
+    need(144);
     const sp = m.sparat || 0;
-    const rows = m.plan ? [] : [['Inkomst', m.inkomst], ['Utgifter', -tU], [sp >= 0 ? 'Till sparande' : 'Uttag från sparande', -sp], ['Kvar efter sparande', m.inkomst - tU - sp]];
+    const rows = m.plan ? [] : [['Inkomst', m.inkomst], ['Utgifter', -tU], ['Resultat före sparande', m.inkomst - tU], [sp >= 0 ? 'Till sparande' : 'Uttag från sparande', -sp], ['Kvar efter sparande', m.inkomst - tU - sp]];
     if (m.planerad != null) rows.push(['Enligt budget: planerad inkomst ' + kr(m.planerad) + ' minus budget' + (m.sparmal ? ' och sparmål ' + kr(m.sparmal) : ''), m.planerad - (m.budget != null ? m.budget : tB) - (m.sparmal || 0)]);
     if ((m.sparmal || 0) + (m.oronmarkt || 0) > 0) rows.push(['Att föra över till sparkonton: sparmål ' + kr(m.sparmal || 0) + (m.oronmarkt ? ' och öronmärkt ' + kr(m.oronmarkt) + ', som ingår i budgeten' : ''), (m.sparmal || 0) + (m.oronmarkt || 0)]);
     rows.forEach((r, i) => {
-      const sum = !m.plan && i === 3;
-      d.text(L + 6, y - 10, r[0], { size: 10, bold: sum, maxW: cK - L - 90 });
-      d.text(cK, y - 10, kr(r[1]), { size: 10, bold: sum, align: 'right', color: sum ? (r[1] < 0 ? C.red : C.pine) : (((m.plan && i === 0) || i === 4) && r[1] < 0 ? C.red : C.ink) });
-      if (!m.plan && i === 2) d.line(L, y - 15, R, y - 15, C.ink, 1); else if (m.plan || i !== 3) d.line(L, y - 15, R, y - 15, C.line, 0.4);
+      const sum = !m.plan && i === 4, mid = !m.plan && i === 2;
+      d.text(L + 6, y - 10, r[0], { size: 10, bold: sum || mid, maxW: cK - L - 90 });
+      d.text(cK, y - 10, kr(r[1]), { size: 10, bold: sum || mid, align: 'right', color: (sum || mid) ? (r[1] < 0 ? C.red : C.pine) : (((m.plan && i === 0) || i === 5) && r[1] < 0 ? C.red : C.ink) });
+      if (!m.plan && (i === 1 || i === 3)) d.line(L, y - 15, R, y - 15, C.ink, 1); else if (m.plan || i !== 4) d.line(L, y - 15, R, y - 15, C.line, 0.4);
       y -= 18;
     });
     y -= 16;
@@ -1975,12 +1985,13 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     body.hidden = false;
     const scope = VY(), mitt = true;
     document.querySelectorAll('[data-vy]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.vy === scope)));
-    $('kvarHint').textContent = scope === 'hushall' ? 'Kvar är hur mycket pengarna på ditt konto och gemensamt tillsammans ökat eller minskat under perioden.' : 'Kvar är hur mycket pengarna på ditt konto ökat eller minskat under perioden.';
+    $('kvarHint').textContent = 'Resultat före sparande är inkomst minus utgifter, alltså periodens riktiga resultat. Kvar är hur mycket pengarna på ' + (scope === 'hushall' ? 'ditt konto och gemensamt tillsammans' : 'ditt konto') + ' ändrats, efter flytt till och från sparkonton.';
     strip($('ovStrip'), cur, scope);
     const m = model(cur, scope);
     const sparat = r0(-(m.s.sums.sparande || 0));
     const plus = m.inn - m.utfall - sparat;
     $('eqIn').textContent = kr(m.inn); $('eqUt').textContent = kr(m.utfall);
+    const resf = r0(m.inn - m.utfall); $('eqResf').textContent = kr(resf); $('eqResfBox').classList.toggle('neg', resf < 0);
     $('eqSpK').textContent = sparat >= 0 ? 'Till sparande' : 'Uttag från sparande'; $('eqSp').textContent = kr(Math.abs(sparat));
     $('eqSp').parentElement.classList.toggle('uttag', sparat < 0);
     $('eqResK').textContent = 'Kvar'; $('eqRes').textContent = kr(plus);
@@ -1990,9 +2001,15 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       // Prognos: kostnader enligt budget (öronmärkt del flyttas till sparkontot i stället), planerad överföring och uttag hittills
       const bb0 = budgetFor(cur, false); const fl = sparFlows(all.filter((t) => t.period === cur));
       const T = (+bb0.spar || 0) + oronSum(bb0);
-      const kost = UT.reduce((x, c) => x + Math.max(r0(-(m.s.sums[c.id] || 0)), Math.max(0, catBudget(bb0, c.id) - oronFor(bb0, c.id))), 0);
-      const pp = m.innPlan - kost - Math.max(T, fl.D) + fl.W;
-      prog.append(frag(['Prognos: håller du budgeten', T ? ` och för över ${kr(Math.max(T, fl.D))} till sparkontona` : '', fl.W ? `, med uttaget på ${kr(fl.W)} medräknat,` : '', ' landar du på ', B(kr(pp)), ' kvar.']));
+      // Det som återstår av budgeten räknas bara för de dagar som är kvar av perioden
+      const pc = periodOf(cur); const slut = (pc && pc.slut) || K.addDays(pc.start, typicalLen() - 1);
+      const L = Math.max(1, daysBetween(pc.start, slut) + 1), left = Math.max(0, Math.min(L, daysBetween(today(), slut))), f = left / L;
+      const rest = UT.reduce((x, c) => x + Math.max(0, catBudget(bb0, c.id) - oronFor(bb0, c.id) - r0(-(m.s.sums[c.id] || 0))), 0);
+      const innE = m.inn + Math.max(0, m.innPlan - m.inn) * f;
+      const sparE = fl.D + Math.max(0, T - fl.D) * f;
+      const pp = r0(innE - m.utfall - rest * f - sparE + fl.W);
+      if (left === 0) prog.append(frag(['Perioden är i stort sett slut. Kvar landar på ', B(kr(pp)), ', och resultatet före sparande på ', B(kr(r0(m.inn - m.utfall))), '.']));
+      else prog.append(frag([`Prognos med ${left} ${left === 1 ? 'dag' : 'dagar'} kvar: håller du budgeten`, T ? ` och för över det som är kvar till sparkontona` : '', fl.W ? `, med uttaget på ${kr(fl.W)} medräknat,` : '', ' landar du på ', B(kr(pp)), ' kvar.']));
     } else if (mitt) {
       prog.append(frag(['Perioden är avslutad. Budget ', B(kr(m.budget)), ', utfall ', B(kr(m.utfall)), '.']));
     }
@@ -2584,6 +2601,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     const rBud = rows.length + 1; rows.push([{ v: 'Budget totalt', s: 'b' }, { v: 'Summan av alla kategorier', s: 'note' }, null]);
     const sparat = r0(-(m.s.sums.sparande || 0));
     const rUtf = rows.length + 1; rows.push([{ v: 'Utfall', s: 'b' }, { v: isLatest(cur) ? 'Dragits hittills i perioden' : 'Dragits under perioden', s: 'note' }, null]);
+    const rRes = rows.length + 1; rows.push([{ v: 'Resultat före sparande', s: 'b' }, { v: 'Inkomst minus utfall, periodens riktiga resultat', s: 'note' }, null]);
     const rSpar = rows.length + 1; rows.push([{ v: 'Till sparande', s: 'b' }, { v: 'Fört över till buffert och sparkonton, minus uttag', s: 'note' }, { v: sparat, s: 'krBig' }]);
     const rMal = rows.length + 1; rows.push([{ v: 'Sparmål', s: 'b' }, { v: 'Planerat sparande utöver budgeten', s: 'note' }, { v: +m.b.spar || 0, s: 'krBig' }]);
     oronOf(m.b).forEach((o) => rows.push([{ v: `Öronmärkt: ${(K.CAT[o.cat] || {}).namn || o.cat}` }, { v: 'Ingår i budgeten, flyttas till sparkontot', s: 'note' }, { v: +o.belopp || 0, s: 'kr' }]));
@@ -2610,6 +2628,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     rows.push([{ v: 'Summa', s: 'bTot' }, { v: '', s: 'bTot' }, { f: groupRows.map((x) => 'C' + x).join('+') || '0', v: tB, s: 'krTot' }, { f: groupRows.map((x) => 'D' + x).join('+') || '0', v: tU, s: 'krTot' }, { f: `C${rTot}-D${rTot}`, v: tB - tU, s: 'krTot' }, { v: '', s: 'bTot' }]);
     rows[rBud - 1][2] = { f: `C${rTot}`, v: tB, s: 'krBig' };
     rows[rUtf - 1][2] = { f: `D${rTot}`, v: tU, s: 'krBig' };
+    rows[rRes - 1][2] = { f: `C${rInc}-C${rUtf}`, v: m.innFakt - tU, s: 'krBig' };
     rows[rPlus - 1][2] = { f: `C${rInc}-C${rUtf}-C${rSpar}`, v: m.innFakt - tU - sparat, s: 'krBig' };
     rows[rKvar - 1][2] = { f: `C${rPlan}-C${rBud}-C${rMal}`, v: m.innPlan - tB - (+m.b.spar || 0), s: 'krBig' };
     if (m.b.oneoffs.length) {
