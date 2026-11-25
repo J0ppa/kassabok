@@ -658,6 +658,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
       <li><b>Allt i sin vanliga kategori</b>, även stora räkningar som kommer igen, som bilservice, däck och apotek.</li>
       <li><b>Engångskostnader bara för stora saker som inte kommer igen</b>, som en renovering, en barnvagn eller en resa. Säljer du något sorterar du pengarna du får som Engångskostnader.</li>
       <li><b>Klarna, Svea och liknande:</b> välj vad köpet var. De får aldrig en regel.</li>
+      <li><b>Pengar från gemensamt som ska täcka ett engångsköp:</b> sortera överföringen som Engångskostnader. Då räknas den mot köpet och inte mot raden Gemensamt konto.</li>
     </ol>
     <details class="help"><summary>Läs mer</summary><ul>
       <li>När rutan Skapa regel är ikryssad sorteras samma butik automatiskt nästa gång.</li>
@@ -1173,7 +1174,8 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
         const gN = n.kontotyp === 'gemensamt', gP = best.kontotyp === 'gemensamt';
         if (gN !== gP) {
           // Ena sidan är det gemensamma kontot: din sida är kostnaden Gemensamt konto, gemensamma sidan en insättning från dig
-          (gN ? best : n).kat = 'gemensamt'; (gN ? n : best).kat = 'fran_mig';
+          // Din sida får sorteras som Engångskostnader, till exempel pengar från gemensamt som täcker ett engångsköp
+          const own = gN ? best : n; own.kat = own.manuell && own.kat === 'engang' ? 'engang' : 'gemensamt'; (gN ? n : best).kat = 'fran_mig';
         } else if (!gN && (n.kontotyp === 'spar') !== (best.kontotyp === 'spar')) {
           // Ena sidan är ett inläst sparkonto: din sida är sparande (eller uttag från sparande)
           const egen = n.kontotyp === 'spar' ? best : n; egen.kat = 'sparande'; (egen === n ? best : n).kat = 'intern';
@@ -1913,6 +1915,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
   // mode: 'regel' = kom ihåg för butiken, 'post' = bara den här posten, 'fraga' = fråga alltid för butiken
   function assign(t, cat, mode, key) {
     if (mode === true) mode = 'regel'; if (!mode) mode = 'post';
+    if (t.overforing || t.sambo) mode = 'post'; // en överföring får aldrig bli en regel
     const snap = JSON.stringify({ regler: state.regler, overrides: state.overrides, senaste: state.ui.senaste, butik: state.ui.butik });
     let msg;
     state.overrides[t.id] = cat;
@@ -2272,7 +2275,7 @@ fieldset.modes legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
     });
     desc();
     const bet = t.kalla === 'betalsätt', fr = t.kalla === 'fråga';
-    setMode(bet ? 'post' : (fr ? 'fraga' : 'regel'));
+    setMode(bet || t.overforing || t.sambo ? 'post' : (fr ? 'fraga' : 'regel'));
     $('sheetModeHint').textContent = bet ? 'Betalsättet används till olika köp, så regel avråds.' : '';
     $('sheetKey').value = t.nyckel || K.suggestKey(t.text);
     $('newCatBox').hidden = true; $('newCatName').value = '';
